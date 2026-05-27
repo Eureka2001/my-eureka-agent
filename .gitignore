@@ -1,0 +1,36 @@
+# Secrets and credentials
+.env
+.env.*
+*.key
+*.pem
+*token*
+*secret*
+credentials/
+secrets/
+
+# Runtime, cache, and local backup files
+logs/
+cache/
+tmp/
+temp/
+backups/
+*.log
+*.sqlite
+*.db
+
+# Language/runtime artifacts
+__pycache__/
+*.pyc
+node_modules/
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Archives and generated packages
+*.zip
+*.tar
+*.tar.gz
+*.7z
