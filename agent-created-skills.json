@@ -23,5 +23,25 @@
     "name": "agent-skills-cross-platform-sync",
     "createdAt": "2026-05-27T12:57:42+08:00",
     "skillDir": "agent-skills-cross-platform-sync"
+  },
+  {
+    "name": "trace-codechain",
+    "createdAt": "2026-05-27T00:00:00+08:00",
+    "skillDir": "trace-codechain"
+  },
+  {
+    "name": "zh2en",
+    "createdAt": "2026-05-27T00:00:00+08:00",
+    "skillDir": "zh2en"
+  },
+  {
+    "name": "english-checking",
+    "createdAt": "2026-05-27T00:00:00+08:00",
+    "skillDir": "english-checking"
+  },
+  {
+    "name": "read-paper",
+    "createdAt": "2026-05-27T00:00:00+08:00",
+    "skillDir": "read-paper"
   }
 ]
