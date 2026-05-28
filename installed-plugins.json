@@ -1,0 +1,26 @@
+[
+  {
+    "name": "planning-with-files",
+    "source": "github",
+    "repo": "OthmanAdi/planning-with-files",
+    "installCommand": "/plugin add OthmanAdi/planning-with-files"
+  },
+  {
+    "name": "claude-plugins-official",
+    "source": "github",
+    "repo": "anthropics/claude-plugins-official",
+    "installCommand": "/plugin add anthropics/claude-plugins-official"
+  },
+  {
+    "name": "claude-code-plugins",
+    "source": "github",
+    "repo": "anthropics/claude-code",
+    "installCommand": "/plugin add anthropics/claude-code"
+  },
+  {
+    "name": "anthropic-agent-skills",
+    "source": "github",
+    "repo": "anthropics/skills",
+    "installCommand": "/plugin add anthropics/skills"
+  }
+]
