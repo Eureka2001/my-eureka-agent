@@ -39,8 +39,6 @@ Codex 新版:  C:\Users\<用户名>\.agents\skills\
 Codex 旧版:  C:\Users\<用户名>\.codex\skills\
 ```
 
-> **注意**：Claude Code 的配置目录可能使用别名而非默认的 `.claude`，例如 `.claude-zai`。实际路径以当前设备为准。可在各平台的设置中确认，或通过 `ls ~ | grep claude` 快速查找。
-
 短期建议使用复制安装；长期多平台使用时，可用 Windows Junction 或 symlink 让各平台目录指向本仓库中的同一份 Skill 源目录。例如 Claude Code 的 symlink：
 
 ```bash
