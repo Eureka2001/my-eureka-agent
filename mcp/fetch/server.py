@@ -167,28 +167,30 @@ async def fetch_url(
     scroll_to_load: bool = True,
     max_chars: int = 20000,
     precise_sizes: bool = False,
+    min_short_side: int = 100,
 ) -> str:
     """用无头浏览器抓取并渲染网页，返回 markdown 正文；末尾附「图片清单」。
 
     图片清单只含**客观信息**：分辨率、显示尺寸、字节数、alt、URL（已去重、过滤
-    短边<100 的图标/装饰与 data URI）。**不做角色推断**——是否图表/照片需配合 vision。
+    短边小于 min_short_side 的图标/装饰与 data URI）。
 
     Args:
         url: 目标网页地址。
         wait_seconds: 首屏后额外等待秒数，给 JS/网络完成留时间。
         scroll_to_load: 是否逐屏滚动以触发懒加载内容。
         max_chars: 返回（正文+清单）总字符上限。
-        precise_sizes: 为 True 时，对未暴露 Content-Length 的图用 httpx 实测字节数（更准但更慢）。
+        precise_sizes: 为 True 时，对未暴露 Content-Length 的图用 httpx 实测字节数（更准但更慢，一般并无必要）。
+        min_short_side: 图片短边最小像素阈值，短边小于此值的图视为图标/装饰而被过滤，默认 100。
     """
     html, raw_imgs, sizes = await _collect(url, wait_seconds, scroll_to_load)
     md = _html_to_markdown(html)
 
-    # 构建图片清单（过滤短边<100 的图标/装饰；保留 0x0 未加载项以提示上游）
+    # 构建图片清单（过滤短边<min_short_side 的图标/装饰；保留 0x0 未加载项以提示上游）
     best = _dedupe_imgs(raw_imgs)
     content = {
         s: e
         for s, e in best.items()
-        if not (min(e.get("nw", 0), e.get("nh", 0)) and min(e.get("nw", 0), e.get("nh", 0)) < 100)
+        if not (min(e.get("nw", 0), e.get("nh", 0)) and min(e.get("nw", 0), e.get("nh", 0)) < min_short_side)
     }
     if precise_sizes and content:
         missing = [s for s in content if sizes.get(s) is None]

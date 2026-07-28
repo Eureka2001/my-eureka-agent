@@ -124,9 +124,9 @@ def _extract_text(data) -> str:
 
 @mcp.tool()
 def recognize_text(image: str) -> str:
-    """识别图片或 PDF 中的文字（中文为主），返回阿里云「统一识别」给出的文本。
+    """识别图片或 PDF 中的文字，返回 OCR 模型给出的文本。
 
-    适合：文档/截图/扫描件/PDF 的文字抽取。比把页面当图片丢给 Vision 更便宜、更适合 PDF。
+    适合：文档/截图/扫描件/PDF 的文字抽取，对于艺术字、小语种处理能力较弱。
 
     Args:
         image: 图片/PDF 来源，支持以下任一形式：
