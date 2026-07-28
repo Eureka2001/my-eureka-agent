@@ -6,8 +6,10 @@
 
 | 工具 | 作用 |
 |---|---|
-| `fetch_url(url, wait_seconds?, scroll_to_load?, max_chars?)` | 无头浏览器抓取渲染后页面，返回 markdown。 |
+| `fetch_url(url, wait_seconds?, scroll_to_load?, max_chars?, precise_sizes?)` | 无头浏览器抓取渲染后页面，返回 markdown 正文 + 末尾「图片清单」（客观元数据：分辨率/显示尺寸/字节数/alt/URL，已过滤装饰图标）。 |
 | `fetch_health()` | 检查 chromium 内核是否已安装。 |
+
+`fetch_url` 的图片清单只含**客观信息**，不做角色推断。是否值得送 OCR/Vision/QR 由上游根据尺寸+alt 自行判断；「图表 vs 照片」需配合 vision。字节数默认取浏览器响应的 `Content-Length`（拿不到显示 `?`）；`precise_sizes=True` 时对缺失项用 httpx 实测（更准但更慢）。图片 URL 可直接喂给 `ocr` / `vision` / `qrcode` server，无需单独下载。
 
 ## 首次安装（一次性）
 

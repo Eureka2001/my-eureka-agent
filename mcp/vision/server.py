@@ -24,6 +24,24 @@ from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("vision")
 
+
+def _bootstrap_env() -> None:
+    """启动时向上查找最近的 .env（server 目录或仓库根）并加载。
+
+    override=False：客户端在配置里显式注入的同名变量优先于 .env。
+    """
+    try:
+        from dotenv import load_dotenv
+    except Exception:
+        return
+    for d in Path(__file__).resolve().parents:
+        if (d / ".env").exists():
+            load_dotenv(d / ".env", override=False)
+            return
+
+
+_bootstrap_env()
+
 _BACKENDS = ("glm", "qwen")
 
 

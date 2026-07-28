@@ -1,6 +1,6 @@
 # mcp-ocr
 
-阿里云通用文字识别（`RecognizeGeneral`）MCP server。**便宜、适合 PDF/文档文字抽取**（PDF 用 OCR 远优于逐页丢 Vision）。
+阿里云「统一识别」（`RecognizeAllText`）MCP server。**便宜、适合 PDF/文档文字抽取**（PDF 用 OCR 远优于逐页丢 Vision），阿里云官方推荐的新接口。
 
 ## 工具
 
@@ -17,7 +17,7 @@
 | `ALIYUN_OCR_AK_SECRET` | 是 | 阿里云 AccessKey Secret |
 | `ALIYUN_OCR_ENDPOINT` | 否 | 默认 `ocr-api.cn-hangzhou.aliyuncs.com` |
 
-开通：阿里云控制台 → 文字识别 OCR → 开通「通用文字识别」。注意 `RecognizeGeneral`（通用文字识别）与 `RecognizeAllText`（统一识别）是不同产品，本 server 用前者。
+开通：阿里云主账号登录 https://ocr.console.aliyun.com → 开通「**统一识别**」（注意：非「通用文字识别」，两者是不同产品，本 server 用前者）。
 
 ## 运行
 

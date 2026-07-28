@@ -8,4 +8,5 @@ dependencies = [
     "httpx>=0.27",
     "alibabacloud_ocr_api20210707>=3.0.0",
     "alibabacloud_tea_openapi>=0.3.13",
+    "python-dotenv>=1.0",
 ]
