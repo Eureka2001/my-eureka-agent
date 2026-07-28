@@ -1,0 +1,10 @@
+[project]
+name = "mcp-vision"
+version = "0.1.0"
+description = "视觉理解 MCP server（GLM-4.6V / Qwen-VL 双后端，env 切换）。"
+requires-python = ">=3.10"
+# 两家均提供 OpenAI 兼容端点，统一用 openai SDK 调用，避免各家专有 SDK 差异。
+dependencies = [
+    "mcp>=1.27,<2",
+    "openai>=1.40",
+]

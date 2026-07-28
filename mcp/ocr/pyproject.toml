@@ -1,0 +1,11 @@
+[project]
+name = "mcp-ocr"
+version = "0.1.0"
+description = "OCR MCP server（阿里云通用文字识别 RecognizeGeneral，支持图片与 PDF）。"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.27,<2",
+    "httpx>=0.27",
+    "alibabacloud_ocr_api20210707>=3.0.0",
+    "alibabacloud_tea_openapi>=0.3.13",
+]
