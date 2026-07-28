@@ -17,6 +17,8 @@ import os
 import sys
 
 import html2text
+import markdownify
+from readability import Document
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("fetch")
@@ -28,8 +30,18 @@ _H2T.ignore_images = False
 _H2T.body_width = 0  # 不强制换行
 
 
-def _html_to_markdown(html: str) -> str:
-    md = _H2T.handle(html)
+def _html_to_markdown(html: str, use_readability: bool = False) -> str:
+    if use_readability:
+        try:
+            cleaned_html = Document(html).summary()
+            if cleaned_html:
+                md = markdownify.markdownify(cleaned_html, heading_style=markdownify.ATX)
+            else:
+                md = _H2T.handle(html)  # fallback
+        except Exception:
+            md = _H2T.handle(html)  # fallback
+    else:
+        md = _H2T.handle(html)
     # 折叠多余空行
     lines = [ln.rstrip() for ln in md.splitlines()]
     out: list[str] = []
@@ -166,8 +178,10 @@ async def fetch_url(
     wait_seconds: float = 2.0,
     scroll_to_load: bool = True,
     max_chars: int = 20000,
+    start_index: int = 0,
     precise_sizes: bool = False,
     min_short_side: int = 100,
+    use_readability: bool = True,
 ) -> str:
     """用无头浏览器抓取并渲染网页，返回 markdown 正文；末尾附「图片清单」。
 
@@ -179,11 +193,13 @@ async def fetch_url(
         wait_seconds: 首屏后额外等待秒数，给 JS/网络完成留时间。
         scroll_to_load: 是否逐屏滚动以触发懒加载内容。
         max_chars: 返回（正文+清单）总字符上限。
+        start_index: 从第几个字符开始返回（用于分页续读上次被截断的内容）。
         precise_sizes: 为 True 时，对未暴露 Content-Length 的图用 httpx 实测字节数（更准但更慢，一般并无必要）。
         min_short_side: 图片短边最小像素阈值，短边小于此值的图视为图标/装饰而被过滤，默认 100。
+        use_readability: 为 True 时，用 Readability 算法先提取正文区域再转 markdown（去噪更好，适合文章页；对复杂布局页面可能误判，此时建议关闭）。
     """
     html, raw_imgs, sizes = await _collect(url, wait_seconds, scroll_to_load)
-    md = _html_to_markdown(html)
+    md = _html_to_markdown(html, use_readability=use_readability)
 
     # 构建图片清单（过滤短边<min_short_side 的图标/装饰；保留 0x0 未加载项以提示上游）
     best = _dedupe_imgs(raw_imgs)
@@ -208,8 +224,13 @@ async def fetch_url(
             )
         md = md.rstrip() + "\n" + "\n".join(lines)
 
+    total = len(md)
+    if start_index >= total:
+        return "<error>没有更多内容了（start_index 已超出总字符数）</error>"
+    md = md[start_index:]
     if len(md) > max_chars:
-        md = md[:max_chars] + f"\n\n…（已截断，共 {len(md)} 字符，仅返回前 {max_chars}）"
+        next_start = start_index + max_chars
+        md = md[:max_chars] + f"\n\n…（已截断，共 {total} 字符，本次返回 {start_index}~{start_index + max_chars}。如需继续，请传 start_index={next_start}）"
     return md or "(抓取到的页面内容为空)"
 
 
