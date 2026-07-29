@@ -11,31 +11,15 @@
 | `ocr/` | 图片/PDF 文字识别（便宜、适合 PDF） | 阿里云 RecognizeGeneral | `ALIYUN_OCR_AK_ID` / `ALIYUN_OCR_AK_SECRET` |
 | `vision/` | 图像语义理解（海报/图表/场景） | GLM-4.6V 或 Qwen-VL（env 切换） | `GLM_API_KEY` / `DASHSCOPE_API_KEY` |
 | `fetch/` | 网页抓取（JS 渲染、懒加载） | Playwright | 无 |
+| `mcp_server_askecho_search_infinity/` | 联网搜索（结构化结果、权威分级） | 火山引擎豆包搜索 API | `ASK_ECHO_SEARCH_INFINITY_API_KEY` 或 `VOLCENGINE_ACCESS_KEY`/`VOLCENGINE_SECRET_KEY` |
 
-三者非替代关系：解码→qrcode，PDF/文档文字→ocr，图像语义理解→vision，网页→fetch。
+四者非替代关系：解码→qrcode，PDF/文档文字→ocr，图像语义理解→vision，网页→fetch，联网搜索→search。
+
+> `mcp_server_askecho_search_infinity/` 从 `volcengine/mcp-server` 官方仓库 sparse-checkout 同步，
+> 仅取搜索子目录，不拉整个 monorepo。详见子目录 README。
 
 ## 统一约定
 
-- **transport 双模**：默认 stdio；`MCP_TRANSPORT=http` 或 `--http` 走 streamable-http（HTTP 模式端口：qrcode 8000 / ocr 8001 / vision 8002 / fetch 8003）。
+- **transport 双模**：默认 stdio；`MCP_TRANSPORT=http` 或 `--http` 走 streamable-http。
 - **stdio 铁律**：诊断信息只写 stderr，绝不写 stdout。
-- **运行**：`cd <server> && uv run server.py`；fetch 首次需 `uv run playwright install chromium`。
-
-## 路径方案（已确认：Windows 目录联接）
-
-如需把仓库路径解耦到稳定位置，用**目录联接**（无需管理员权限）：
-
-```cmd
-mklink /J "%USERPROFILE%\.mcp-servers\qrcode" "D:\Repositories\my-eureka-agent\mcp\qrcode"
-```
-
-> 不要用 symlink（需管理员）。
-
-## 注册矩阵
-
-| 客户端 | transport | 方式 |
-|---|---|---|
-| Claude Code / Codex / Gemini CLI / OpenCode | stdio | cc-switch 批量写入；或各 server README 的 `claude mcp add` |
-| Qoder / QoderWork | stdio | Settings → Connectors & MCP → 粘贴各 server README 的 JSON |
-| ChatGPT Work | http（必须远程） | 各 server 以 HTTP 常驻进程，再以 `http://127.0.0.1:<port>/mcp` 添加 |
-
-各 server 的具体注册 JSON 片段见对应子目录 README。
+- **运行**：`cd <server> && uv run server.py`（search 用 `uv run mcp-server-askecho-search-infinity`）；fetch 首次需 `uv run playwright install chromium`。

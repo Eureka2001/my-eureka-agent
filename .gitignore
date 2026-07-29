@@ -1,3 +1,6 @@
+# AI Agent
+.workbuddy/
+
 # Secrets and credentials
 .env
 .env.*
@@ -23,6 +26,7 @@ backups/
 __pycache__/
 *.pyc
 node_modules/
+*.egg-info
 
 # OS/editor files
 .DS_Store
