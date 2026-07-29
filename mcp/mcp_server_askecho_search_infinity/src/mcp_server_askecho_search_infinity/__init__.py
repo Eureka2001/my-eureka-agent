@@ -1,3 +1,3 @@
-from .server import main
+from .server import main as main
 
 __version__ = "0.1.0"

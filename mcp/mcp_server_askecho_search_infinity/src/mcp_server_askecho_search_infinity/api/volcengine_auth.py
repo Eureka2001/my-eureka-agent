@@ -3,7 +3,7 @@ import hashlib
 import hmac
 import json
 from urllib.parse import quote
-from ..model import *
+from ..model import WebSearchRequest
 
 import aiohttp
 
@@ -14,12 +14,16 @@ Host = "mercury.volcengineapi.com"
 ContentType = "application/json"
 
 
-async def web_search_volcengine_auth(ak: str, sk: str, req: WebSearchRequest, tool_name: str):
+async def web_search_volcengine_auth(
+    ak: str, sk: str, req: WebSearchRequest, tool_name: str
+):
     now = datetime.datetime.utcnow()
     headers = {
         "X-Traffic-Tag": f"ark_mcp_server_{tool_name}",
     }
-    return await volcengine_auth_request("POST", now, {}, headers, ak, sk, "WebSearch", json.dumps(req.to_payload()))
+    return await volcengine_auth_request(
+        "POST", now, {}, headers, ak, sk, "WebSearch", json.dumps(req.to_payload())
+    )
 
 
 def norm_query(params):
@@ -28,7 +32,11 @@ def norm_query(params):
         if isinstance(params[key], list):
             for value in params[key]:
                 query = (
-                        query + quote(key, safe="-_.~") + "=" + quote(value, safe="-_.~") + "&"
+                    query
+                    + quote(key, safe="-_.~")
+                    + "="
+                    + quote(value, safe="-_.~")
+                    + "&"
                 )
         else:
             query = (
@@ -92,28 +100,35 @@ async def volcengine_auth_request(method, date, query, header, ak, sk, action, b
     canonical_header_lines.sort()
     signed_headers_str = ";".join(signed_header_keys)
     canonical_request_str = "\n".join(
-        [request_param["method"].upper(),
-         request_param["path"],
-         norm_query(request_param["query"]),
-         "\n".join(canonical_header_lines),
-         "",
-         signed_headers_str,
-         x_content_sha256,
-         ]
+        [
+            request_param["method"].upper(),
+            request_param["path"],
+            norm_query(request_param["query"]),
+            "\n".join(canonical_header_lines),
+            "",
+            signed_headers_str,
+            x_content_sha256,
+        ]
     )
     hashed_canonical_request = hash_sha256(canonical_request_str)
-    credential_scope = "/".join([short_x_date, credential["region"], credential["service"], "request"])
-    string_to_sign = "\n".join(["HMAC-SHA256", x_date, credential_scope, hashed_canonical_request])
+    credential_scope = "/".join(
+        [short_x_date, credential["region"], credential["service"], "request"]
+    )
+    string_to_sign = "\n".join(
+        ["HMAC-SHA256", x_date, credential_scope, hashed_canonical_request]
+    )
     k_date = hmac_sha256(credential["secret_access_key"].encode("utf-8"), short_x_date)
     k_region = hmac_sha256(k_date, credential["region"])
     k_service = hmac_sha256(k_region, credential["service"])
     k_signing = hmac_sha256(k_service, "request")
     signature = hmac_sha256(k_signing, string_to_sign).hex()
 
-    sign_result["Authorization"] = "HMAC-SHA256 Credential={}, SignedHeaders={}, Signature={}".format(
-        credential["access_key_id"] + "/" + credential_scope,
-        signed_headers_str,
-        signature,
+    sign_result["Authorization"] = (
+        "HMAC-SHA256 Credential={}, SignedHeaders={}, Signature={}".format(
+            credential["access_key_id"] + "/" + credential_scope,
+            signed_headers_str,
+            signature,
+        )
     )
     header = {**header, **sign_result}
 
@@ -124,7 +139,7 @@ async def volcengine_auth_request(method, date, query, header, ak, sk, action, b
             headers=header,
             timeout=aiohttp.ClientTimeout(total=600),
             params=request_param["query"],
-            data=request_param["body"]
+            data=request_param["body"],
         ) as response:
             # 在上下文内读取所有数据，避免连接关闭问题
             response.raise_for_status()  # 手动调用

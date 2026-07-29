@@ -15,7 +15,7 @@
 
 1. 将当前仓库 `D:\Repositories\my-eureka-agent` 下开发我所需要的 MCP
 2. 在我的主目录下 `~/.mcp-servers` 通过文件夹软链接到当前的 mcp server
-3. 通过 stdio 的 MCP Server 或者 HTTP 的 MCP 进行实现。 
+3. 通过 stdio 的 MCP Server 或者 HTTP 的 MCP 进行实现。
 4. 每个工具以 UV 管理的 python 进行实现，UV 之间彼此隔离，避免相互污染。
 5. 通过 cc-switch 一次性注册我的所有 MCP 到 ChatGPT Work，而 Qoder 和 Workbuddy 也可以进行导入操作。
 

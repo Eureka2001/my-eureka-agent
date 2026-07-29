@@ -428,7 +428,7 @@
     <text macro="publishing-paper-conference"/>
     <!-- <text macro="url-doi"/> -->
   </group>
-</macro> 
+</macro>
   <!-- 专著中的析出文献 -->
   <macro name="chapter-in-book-layout">
     <group delimiter=". " suffix=".">
@@ -492,7 +492,7 @@
       </else-if>
       <else-if type="webpage" match="any">
         <text macro="monograph-layout"/>
-      </else-if>  
+      </else-if>
       <else-if type="paper-conference" variable="container-title" match="any">
               <text macro="paper-conference-layout"/>
       </else-if>

@@ -35,7 +35,9 @@ def _html_to_markdown(html: str, use_readability: bool = False) -> str:
         try:
             cleaned_html = Document(html).summary()
             if cleaned_html:
-                md = markdownify.markdownify(cleaned_html, heading_style=markdownify.ATX)
+                md = markdownify.markdownify(
+                    cleaned_html, heading_style=markdownify.ATX
+                )
             else:
                 md = _H2T.handle(html)  # fallback
         except Exception:
@@ -66,7 +68,9 @@ async def _resolve_sizes(urls: list[str]) -> dict[str, int | None]:
 
     out: dict[str, int | None] = {}
     async with httpx.AsyncClient(
-        timeout=15.0, follow_redirects=True, headers={"User-Agent": "Mozilla/5.0 mcp-fetch"}
+        timeout=15.0,
+        follow_redirects=True,
+        headers={"User-Agent": "Mozilla/5.0 mcp-fetch"},
     ) as c:
         for u in urls:
             sz: int | None = None
@@ -102,8 +106,8 @@ def _human_bytes(n: int | None) -> str:
     if n < 1024:
         return f"{n}B"
     if n < 1024 * 1024:
-        return f"{n/1024:.0f}KB"
-    return f"{n/1024/1024:.1f}MB"
+        return f"{n / 1024:.0f}KB"
+    return f"{n / 1024 / 1024:.1f}MB"
 
 
 _IMG_JS = (
@@ -127,7 +131,9 @@ async def _collect(url: str, wait_seconds: float, scroll_to_load: bool):
         def _on_resp(resp):
             try:
                 if resp.request.resource_type == "image":
-                    cl = resp.headers.get("content-length") or resp.headers.get("Content-Length")
+                    cl = resp.headers.get("content-length") or resp.headers.get(
+                        "Content-Length"
+                    )
                     sizes[resp.url] = int(cl) if (cl and cl.isdigit()) else None
             except Exception:
                 pass
@@ -135,7 +141,9 @@ async def _collect(url: str, wait_seconds: float, scroll_to_load: bool):
         page.on("response", _on_resp)
         await page.goto(url, wait_until="domcontentloaded", timeout=45_000)
         try:
-            await page.wait_for_load_state("networkidle", timeout=int(wait_seconds * 1000))
+            await page.wait_for_load_state(
+                "networkidle", timeout=int(wait_seconds * 1000)
+            )
         except Exception:
             pass
         await page.wait_for_timeout(int(wait_seconds * 1000))
@@ -143,7 +151,9 @@ async def _collect(url: str, wait_seconds: float, scroll_to_load: bool):
         if scroll_to_load:
             last = -1
             for _ in range(12):
-                await page.evaluate("window.scrollBy(0, document.body.scrollHeight * 0.8)")
+                await page.evaluate(
+                    "window.scrollBy(0, document.body.scrollHeight * 0.8)"
+                )
                 await page.wait_for_timeout(600)
                 h = await page.evaluate("document.body.scrollHeight")
                 if h == last:
@@ -206,7 +216,10 @@ async def fetch_url(
     content = {
         s: e
         for s, e in best.items()
-        if not (min(e.get("nw", 0), e.get("nh", 0)) and min(e.get("nw", 0), e.get("nh", 0)) < min_short_side)
+        if not (
+            min(e.get("nw", 0), e.get("nh", 0))
+            and min(e.get("nw", 0), e.get("nh", 0)) < min_short_side
+        )
     }
     if precise_sizes and content:
         missing = [s for s in content if sizes.get(s) is None]
@@ -220,7 +233,7 @@ async def fetch_url(
             disp = f"{e.get('w')}x{e.get('h')}" if e.get("w") and e.get("h") else "?"
             alt = e.get("alt", "")
             lines.append(
-                f"- {nw}x{nh}（显示 {disp}） {_human_bytes(sizes.get(s))} alt=\"{alt}\" {s}"
+                f'- {nw}x{nh}（显示 {disp}） {_human_bytes(sizes.get(s))} alt="{alt}" {s}'
             )
         md = md.rstrip() + "\n" + "\n".join(lines)
 
@@ -230,7 +243,10 @@ async def fetch_url(
     md = md[start_index:]
     if len(md) > max_chars:
         next_start = start_index + max_chars
-        md = md[:max_chars] + f"\n\n…（已截断，共 {total} 字符，本次返回 {start_index}~{start_index + max_chars}。如需继续，请传 start_index={next_start}）"
+        md = (
+            md[:max_chars]
+            + f"\n\n…（已截断，共 {total} 字符，本次返回 {start_index}~{start_index + max_chars}。如需继续，请传 start_index={next_start}）"
+        )
     return md or "(抓取到的页面内容为空)"
 
 
@@ -265,7 +281,10 @@ if __name__ == "__main__":
     if mode in ("http", "streamable-http", "sse"):
         mcp.settings.host = os.environ.get("MCP_HOST", "127.0.0.1")
         mcp.settings.port = int(os.environ.get("MCP_PORT", "8003"))
-        print(f"[fetch] streamable-http @ {mcp.settings.host}:{mcp.settings.port}", file=sys.stderr)
+        print(
+            f"[fetch] streamable-http @ {mcp.settings.host}:{mcp.settings.port}",
+            file=sys.stderr,
+        )
         mcp.run(transport="streamable-http")
     else:
         mcp.run(transport="stdio")

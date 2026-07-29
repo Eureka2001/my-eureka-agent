@@ -3,10 +3,10 @@ import argparse
 from mcp.server import FastMCP
 from typing import Dict, Any
 
-from .model import *
-from .config import *
-from .api.api_key_auth import *
-from .api.volcengine_auth import *
+from .model import Error, ResponseError, build_web_search_request
+from .config import load_config
+from .api.api_key_auth import web_search_api_key_auth
+from .api.volcengine_auth import web_search_volcengine_auth
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -36,7 +36,7 @@ async def web_search(
     Returns:
         联网搜索结果返回结构
     """
-    logger.info(f"Received web_search tool request")
+    logger.info("Received web_search tool request")
 
     try:
         if config is None:
@@ -53,7 +53,9 @@ async def web_search(
         if config.api_key is not None and len(config.api_key) > 0:
             return await web_search_api_key_auth(config.api_key, req, "web_search")
         else:
-            return await web_search_volcengine_auth(config.volcengine_ak, config.volcengine_sk, req, "web_search")
+            return await web_search_volcengine_auth(
+                config.volcengine_ak, config.volcengine_sk, req, "web_search"
+            )
     except Exception as e:
         logger.error(f"Error in web_search tool: {e}")
         resp_error = ResponseError(
@@ -84,7 +86,9 @@ def main():
         global config
         config = load_config()
         # Run the MCP server
-        logger.info(f"Starting Web Search API MCP Server with {args.transport} transport")
+        logger.info(
+            f"Starting Web Search API MCP Server with {args.transport} transport"
+        )
         mcp.run(transport=args.transport)
     except Exception as e:
         logger.error(f"Error starting Web Search API MCP Server: {str(e)}")

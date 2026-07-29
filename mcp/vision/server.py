@@ -50,7 +50,9 @@ def _backend_config(name: str | None) -> tuple[str, str, str, str]:
     name = (name or os.environ.get("VISION_BACKEND", "glm")).lower()
     if name in ("qwen", "qwen-vl", "dashscope"):
         key = os.environ.get("DASHSCOPE_API_KEY") or os.environ.get("QWEN_API_KEY", "")
-        base = os.environ.get("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+        base = os.environ.get(
+            "DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        )
         model = os.environ.get("QWEN_VISION_MODEL", "qwen-vl-max")
         name = "qwen"
     elif name == "glm":
@@ -85,7 +87,7 @@ def _image_block(image: str) -> dict:
 @mcp.tool()
 def understand_image(
     image: str,
-    prompt: str = "请详细、准确地描述这张图片的内容。",
+    prompt: str = "请详细、准确地描述这张图片的内容，这张图片是什么类型，主要内容是什么，有无需要额外关注的元素。",
     backend: str = "",
 ) -> str:
     """用多模态大模型理解图片，返回文字描述或对 prompt 的回答。
@@ -139,7 +141,10 @@ if __name__ == "__main__":
     if mode in ("http", "streamable-http", "sse"):
         mcp.settings.host = os.environ.get("MCP_HOST", "127.0.0.1")
         mcp.settings.port = int(os.environ.get("MCP_PORT", "8002"))
-        print(f"[vision] streamable-http @ {mcp.settings.host}:{mcp.settings.port}", file=sys.stderr)
+        print(
+            f"[vision] streamable-http @ {mcp.settings.host}:{mcp.settings.port}",
+            file=sys.stderr,
+        )
         mcp.run(transport="streamable-http")
     else:
         mcp.run(transport="stdio")

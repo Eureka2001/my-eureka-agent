@@ -19,7 +19,6 @@ import os
 import sys
 from pathlib import Path
 
-import httpx
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("ocr")
@@ -46,7 +45,9 @@ _bootstrap_env()
 def _creds() -> tuple[str, str, str]:
     ak = os.environ.get("ALIYUN_OCR_AK_ID", "").strip()
     sk = os.environ.get("ALIYUN_OCR_AK_SECRET", "").strip()
-    endpoint = os.environ.get("ALIYUN_OCR_ENDPOINT", "ocr-api.cn-hangzhou.aliyuncs.com").strip()
+    endpoint = os.environ.get(
+        "ALIYUN_OCR_ENDPOINT", "ocr-api.cn-hangzhou.aliyuncs.com"
+    ).strip()
     if not ak or not sk:
         raise RuntimeError(
             "缺少阿里云凭据：请设置环境变量 ALIYUN_OCR_AK_ID 与 ALIYUN_OCR_AK_SECRET。"
@@ -78,7 +79,9 @@ def _resolve_input(image: str) -> tuple[str | None, bytes | None]:
     try:
         return None, base64.b64decode(image, validate=False)
     except Exception as e:
-        raise ValueError(f"无法解析 image 参数（既非存在路径，也非合法 URL/base64）：{e}") from e
+        raise ValueError(
+            f"无法解析 image 参数（既非存在路径，也非合法 URL/base64）：{e}"
+        ) from e
 
 
 def _extract_text(data) -> str:
@@ -87,7 +90,8 @@ def _extract_text(data) -> str:
     阿里云 SDK 可能将 data 返回为 JSON 字符串、Python repr 或原生 dict/list。
     逐层尝试：字符串 → 解析为结构体 → 找语义键 → 兜底原文。
     """
-    import ast, json
+    import ast
+    import json
 
     if data is None:
         return ""
@@ -148,7 +152,9 @@ def recognize_text(image: str) -> str:
         # 阿里云 Tea SDK 的错误对象通常带 .message / .code
         msg = getattr(e, "message", None) or str(e)
         code = getattr(e, "code", None)
-        raise RuntimeError(f"阿里云 OCR 调用失败{f' [{code}]' if code else ''}: {msg}") from e
+        raise RuntimeError(
+            f"阿里云 OCR 调用失败{f' [{code}]' if code else ''}: {msg}"
+        ) from e
 
     text = _extract_text(getattr(resp.body, "data", None))
     return text or "未识别到文字（响应 data 为空）。"
@@ -178,7 +184,10 @@ if __name__ == "__main__":
     if mode in ("http", "streamable-http", "sse"):
         mcp.settings.host = os.environ.get("MCP_HOST", "127.0.0.1")
         mcp.settings.port = int(os.environ.get("MCP_PORT", "8001"))
-        print(f"[ocr] streamable-http @ {mcp.settings.host}:{mcp.settings.port}", file=sys.stderr)
+        print(
+            f"[ocr] streamable-http @ {mcp.settings.host}:{mcp.settings.port}",
+            file=sys.stderr,
+        )
         mcp.run(transport="streamable-http")
     else:
         mcp.run(transport="stdio")

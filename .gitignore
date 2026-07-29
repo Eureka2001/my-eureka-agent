@@ -1,6 +1,3 @@
-# AI Agent
-.workbuddy/
-
 # Secrets and credentials
 .env
 .env.*

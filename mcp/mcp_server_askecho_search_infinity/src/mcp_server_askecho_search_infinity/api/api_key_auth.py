@@ -1,6 +1,6 @@
 import json
 import aiohttp
-from ..model import *
+from ..model import WebSearchRequest
 
 Host = "open.feedcoopapi.com"
 ContentType = "application/json"
@@ -18,7 +18,7 @@ async def web_search_api_key_auth(api_key: str, req: WebSearchRequest, tool_name
             url=f"https://{Host}/search_api/web_search",
             headers=header,
             timeout=aiohttp.ClientTimeout(total=3000),
-            data=json.dumps(req.to_payload())
+            data=json.dumps(req.to_payload()),
         ) as response:
             # 在上下文内读取所有数据，避免连接关闭问题
             response.raise_for_status()  # 手动调用

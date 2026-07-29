@@ -15,11 +15,7 @@ class Error:
     code: str
 
     def to_dict(self):
-        return {
-            "message": self.message,
-            "type": self.type,
-            "code": self.code
-        }
+        return {"message": self.message, "type": self.type, "code": self.code}
 
 
 @dataclass
@@ -102,11 +98,11 @@ def validate_time_range(time_range: Optional[str]) -> Optional[str]:
 
 
 def build_web_search_request(
-        query: str,
-        count: int = 10,
-        search_type: str = "web",
-        time_range: Optional[str] = None,
-        auth_level: int = 0,
+    query: str,
+    count: int = 10,
+    search_type: str = "web",
+    time_range: Optional[str] = None,
+    auth_level: int = 0,
 ) -> WebSearchRequest:
     normalized_query = (query or "").strip()
     if not normalized_query:
@@ -126,8 +122,14 @@ def build_web_search_request(
     if auth_level not in {0, 1}:
         raise ValueError("AuthLevel 仅支持 0 或 1。")
 
-    normalized_time_range = validate_time_range(time_range) if search_type == "web" else None
-    filters = {"AuthInfoLevel": auth_level} if search_type == "web" and auth_level > 0 else None
+    normalized_time_range = (
+        validate_time_range(time_range) if search_type == "web" else None
+    )
+    filters = (
+        {"AuthInfoLevel": auth_level}
+        if search_type == "web" and auth_level > 0
+        else None
+    )
 
     return WebSearchRequest(
         Query=normalized_query,
