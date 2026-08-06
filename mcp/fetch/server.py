@@ -21,7 +21,7 @@ import markdownify
 from readability import Document
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("fetch")
+mcp = FastMCP("eureka_fetch")
 
 # html2text 配置：保留链接与图片 URL（图片 URL 是上游决定是否 OCR/Vision/QR 的关键线索）
 _H2T = html2text.HTML2Text()
@@ -183,7 +183,7 @@ def _dedupe_imgs(raw_imgs: list[dict]) -> dict[str, dict]:
 
 
 @mcp.tool()
-async def fetch_url(
+async def playwright_fetch(
     url: str,
     wait_seconds: float = 2.0,
     scroll_to_load: bool = True,
@@ -259,7 +259,7 @@ async def fetch_health() -> str:
         async with async_playwright() as p:
             b = await p.chromium.launch(headless=True)
             await b.close()
-        return "Playwright chromium 就绪，fetch server 可用。"
+        return "Playwright chromium 就绪，eureka_fetch server 可用。"
     except Exception as e:
         return (
             "chromium 未就绪：请先执行 `uv run playwright install chromium`。\n"

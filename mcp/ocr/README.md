@@ -6,7 +6,7 @@
 
 | 工具 | 作用 |
 |---|---|
-| `recognize_text(image)` | 识别图片/PDF 中的文字，返回 markdown 文本。`image` 支持本地路径 / URL / data: URI / 裸 base64。 |
+| `aliyun_ocr(image)` | 识别图片/PDF 中的文字，返回 markdown 文本。`image` 支持本地路径 / URL / data: URI / 裸 base64。 |
 | `ocr_health()` | 校验凭据是否配置（不发请求）。 |
 
 ## 环境变量（凭据，绝不入库）
@@ -33,13 +33,13 @@ uv run server.py --http     # streamable-http（默认 127.0.0.1:8001）
 
 ### Claude Code（stdio）
 ```bash
-claude mcp add ocr -- uv run --directory D:/Repositories/my-eureka-agent/mcp/ocr server.py
+claude mcp add eureka_ocr -- uv run --directory D:/Repositories/my-eureka-agent/mcp/ocr server.py
 ```
 凭据通过 client 配置的 `env` 字段注入，例如仓库 `.mcp.json`：
 ```json
 {
   "mcpServers": {
-    "ocr": {
+    "eureka_ocr": {
       "type": "stdio",
       "command": "uv",
       "args": ["run", "--directory", "D:/Repositories/my-eureka-agent/mcp/ocr", "server.py"],

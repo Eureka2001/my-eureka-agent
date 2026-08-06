@@ -2,7 +2,7 @@
 
 视觉理解 MCP server。**GLM-4.6V / Qwen-VL 双后端**，环境变量切换，统一走各家 OpenAI 兼容端点。
 
-定位：真正的「看图理解」（海报/图表/场景图/UI 截图）。文档/PDF 文字抽取用 `ocr`，二维码用 `qrcode`。
+定位：真正的「看图理解」（海报/图表/场景图/UI 截图）。文档/PDF 文字抽取用 `eureka_ocr`，二维码用 `eureka_qrcode`。
 
 ## 工具
 
@@ -39,7 +39,7 @@ uv run server.py --http     # streamable-http（默认 127.0.0.1:8002）
 ```json
 {
   "mcpServers": {
-    "vision": {
+    "eureka_vision": {
       "type": "stdio",
       "command": "uv",
       "args": ["run", "--directory", "D:/Repositories/my-eureka-agent/mcp/vision", "server.py"],

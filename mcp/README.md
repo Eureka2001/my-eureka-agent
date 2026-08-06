@@ -13,7 +13,7 @@
 | `fetch/` | 网页抓取（JS 渲染、懒加载） | Playwright | 无 |
 | `mcp_server_askecho_search_infinity/` | 联网搜索（结构化结果、权威分级） | 火山引擎豆包搜索 API | `ASK_ECHO_SEARCH_INFINITY_API_KEY` 或 `VOLCENGINE_ACCESS_KEY`/`VOLCENGINE_SECRET_KEY` |
 
-四者非替代关系：解码→qrcode，PDF/文档文字→ocr，图像语义理解→vision，网页→fetch，联网搜索→search。
+四者非替代关系：解码→eureka_qrcode，PDF/文档文字→eureka_ocr，图像语义理解→eureka_vision，网页→eureka_fetch，联网搜索→eureka_search。
 
 > `mcp_server_askecho_search_infinity/` 从 `volcengine/mcp-server` 官方仓库 sparse-checkout 同步，
 > 仅取搜索子目录，不拉整个 monorepo。详见子目录 README。
@@ -23,3 +23,4 @@
 - **transport 双模**：默认 stdio；`MCP_TRANSPORT=http` 或 `--http` 走 streamable-http。
 - **stdio 铁律**：诊断信息只写 stderr，绝不写 stdout。
 - **运行**：`cd <server> && uv run server.py`（search 用 `uv run mcp-server-askecho-search-infinity`）；fetch 首次需 `uv run playwright install chromium`。
+- **MCP 命名**：server 注册名统一 `eureka_` 前缀（`eureka_fetch` / `eureka_ocr` / `eureka_qrcode` / `eureka_vision` / `eureka_search`）；工具名保留描述性原名（如 `doubao_search`、`playwright_fetch`），便于后续扩展新工具。

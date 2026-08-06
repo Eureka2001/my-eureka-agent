@@ -22,7 +22,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("vision")
+mcp = FastMCP("eureka_vision")
 
 
 def _bootstrap_env() -> None:
@@ -93,7 +93,7 @@ def understand_image(
     """用多模态大模型理解图片，返回文字描述或对 prompt 的回答。
 
     适用：海报、图表、场景图、UI 截图等需要「语义理解」的场景。
-    如果是纯粹的文档/PDF 文字抽取请用 ocr server（更便宜）；二维码解码请用 qrcode server。
+    如果是纯粹的文档/PDF 文字抽取请用 eureka_ocr server（更便宜）；二维码解码请用 eureka_qrcode server。
 
     Args:
         image: 图片来源：本地路径 / http(s) URL / data: URI / 裸 base64。
@@ -122,7 +122,7 @@ def vision_health() -> str:
     """报告当前默认后端的配置状态（不发请求）。"""
     try:
         name, _key, base, model = _backend_config(None)
-        return f"默认后端：{name}（{model} @ {base}），凭据已配置，vision server 就绪。"
+        return f"默认后端：{name}（{model} @ {base}），凭据已配置，eureka_vision server 就绪。"
     except (RuntimeError, ValueError) as e:
         return f"未就绪：{e}"
 

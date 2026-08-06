@@ -51,7 +51,7 @@ uv run mcp-server-askecho-search-infinity -t streamable-http # Streamable HTTP
 
 ## Tools
 
-### `web_search`
+### `doubao_search`
 
 联网搜索 API 调用，支持网页和图片搜索。
 

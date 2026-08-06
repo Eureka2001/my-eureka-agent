@@ -14,11 +14,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 config = None
-mcp = FastMCP("联网搜索API MCP Server")
+mcp = FastMCP("eureka_search")
 
 
 @mcp.tool()
-async def web_search(
+async def doubao_search(
     Query: str,
     Count: int = 10,
     SearchType: str = "web",
@@ -36,7 +36,7 @@ async def web_search(
     Returns:
         联网搜索结果返回结构
     """
-    logger.info("Received web_search tool request")
+    logger.info("Received doubao_search tool request")
 
     try:
         if config is None:
@@ -51,13 +51,13 @@ async def web_search(
         )
 
         if config.api_key is not None and len(config.api_key) > 0:
-            return await web_search_api_key_auth(config.api_key, req, "web_search")
+            return await web_search_api_key_auth(config.api_key, req, "doubao_search")
         else:
             return await web_search_volcengine_auth(
-                config.volcengine_ak, config.volcengine_sk, req, "web_search"
+                config.volcengine_ak, config.volcengine_sk, req, "doubao_search"
             )
     except Exception as e:
-        logger.error(f"Error in web_search tool: {e}")
+        logger.error(f"Error in doubao_search tool: {e}")
         resp_error = ResponseError(
             error=Error(
                 message=str(e),

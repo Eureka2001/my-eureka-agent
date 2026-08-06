@@ -24,7 +24,7 @@ import httpx
 import numpy as np
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("qrcode")
+mcp = FastMCP("eureka_qrcode")
 
 
 # --------------------------------------------------------------------------- #

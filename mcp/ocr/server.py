@@ -21,7 +21,7 @@ from pathlib import Path
 
 from mcp.server.fastmcp import FastMCP
 
-mcp = FastMCP("ocr")
+mcp = FastMCP("eureka_ocr")
 
 
 def _bootstrap_env() -> None:
@@ -127,7 +127,7 @@ def _extract_text(data) -> str:
 
 
 @mcp.tool()
-def recognize_text(image: str) -> str:
+def aliyun_ocr(image: str) -> str:
     """识别图片或 PDF 中的文字，返回 OCR 模型给出的文本。
 
     适合：文档/截图/扫描件/PDF 的文字抽取，对于艺术字、小语种处理能力较弱。
@@ -165,7 +165,7 @@ def ocr_health() -> str:
     """检查 OCR 凭据是否已配置（不发请求，仅校验环境变量）。"""
     try:
         _creds()
-        return "凭据已配置，OCR server 就绪。"
+        return "凭据已配置，eureka_ocr server 就绪。"
     except RuntimeError as e:
         return f"未就绪：{e}"
 

@@ -37,13 +37,13 @@ uv run server.py --http          # streamable-http（默认 127.0.0.1:8000）
 
 ### Claude Code（stdio）
 ```bash
-claude mcp add qrcode -- uv run --directory D:/Repositories/my-eureka-agent/mcp/qrcode server.py
+claude mcp add eureka_qrcode -- uv run --directory D:/Repositories/my-eureka-agent/mcp/qrcode server.py
 ```
 或仓库根 `.mcp.json`（project scope，团队共享）：
 ```json
 {
   "mcpServers": {
-    "qrcode": {
+    "eureka_qrcode": {
       "type": "stdio",
       "command": "uv",
       "args": ["run", "--directory", "D:/Repositories/my-eureka-agent/mcp/qrcode", "server.py"]
@@ -53,7 +53,7 @@ claude mcp add qrcode -- uv run --directory D:/Repositories/my-eureka-agent/mcp/
 ```
 
 ### Qoder / QoderWork（stdio）
-Settings → Connectors & MCP → +Add → 粘贴上方同款 JSON（`mcpServers.qrcode`）。
+Settings → Connectors & MCP → +Add → 粘贴上方同款 JSON（`mcpServers.eureka_qrcode`）。
 
 ### ChatGPT Work（仅远程 HTTP）
 先常驻起 HTTP 进程，再以 URL 添加：
