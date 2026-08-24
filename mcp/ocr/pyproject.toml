@@ -1,5 +1,5 @@
 [project]
-name = "mcp-ocr"
+name = "eureka-ocr"
 version = "0.1.0"
 description = "OCR MCP server（阿里云通用文字识别 RecognizeGeneral，支持图片与 PDF）。"
 requires-python = ">=3.10"

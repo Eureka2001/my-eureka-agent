@@ -1,0 +1,54 @@
+{
+  "mcpServers": {
+    "eureka_search": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "D:/Repositories/my-eureka-agent/mcp/mcp_server_askecho_search_infinity",
+        "mcp-server-askecho-search-infinity"
+      ]
+    },
+    "eureka_fetch": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "D:/Repositories/my-eureka-agent/mcp/fetch",
+        "server.py"
+      ]
+    },
+    "eureka_ocr": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "D:/Repositories/my-eureka-agent/mcp/ocr",
+        "server.py"
+      ]
+    },
+    "eureka_qrcode": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "D:/Repositories/my-eureka-agent/mcp/qrcode",
+        "server.py"
+      ]
+    },
+    "eureka_vision": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "D:/Repositories/my-eureka-agent/mcp/vision",
+        "server.py"
+      ]
+    }
+  }
+}

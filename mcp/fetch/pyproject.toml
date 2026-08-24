@@ -1,5 +1,5 @@
 [project]
-name = "mcp-fetch"
+name = "eureka-fetch"
 version = "0.1.0"
 description = "网页抓取 MCP server（Playwright 渲染，支持 JS/懒加载，输出 markdown）。"
 requires-python = ">=3.10"
