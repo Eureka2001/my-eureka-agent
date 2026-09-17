@@ -5,10 +5,10 @@
 ## 内容结构
 
 ```text
-my-agent-skills/
+my-eureka-agent/
 ├── plugins.json            # 常用的社区 Skill 等插件记录
-└── skills/                 # 我自建 Skills
-└── mcp/                    # 我自建 Skills
+├── skills/                 # 我自建 Skills
+└── mcp/                    # 我自建 MCP server
 ```
 
 ## 安全约束
