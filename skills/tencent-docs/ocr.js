@@ -15,17 +15,16 @@
  *
  * 依赖：
  *   - Node.js (>= 14)
- *   - mcporter（已配置 tencent-docs 服务）
+ *   - 环境变量 TENCENT_DOCS_TOKEN（厂商约定，经 mcp_call.js 直连 MCP 端点）
  */
 
 "use strict";
 
-const { execFileSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+const { callMcp } = require("./mcp_call.js");
 
 // ── 常量 ──────────────────────────────────────────────────────────────────
-const MCP_SERVICE = "tencent-docs";
 const SUPPORTED_EXTS = new Set(["png", "jpg", "jpeg", "bmp", "webp"]);
 const MAX_SINGLE_SIZE = 10 * 1024 * 1024;
 const MAX_TOTAL_SIZE = 50 * 1024 * 1024;
@@ -58,21 +57,10 @@ function encodeBase64(filePath) {
   return fs.readFileSync(filePath).toString("base64");
 }
 
-// ── mcporter 调用封装 ────────────────────────────────────────────────────
-// 使用 execFileSync 直接传参数数组，绕过 shell，兼容 Windows 且无命令行长度限制
+// ── MCP 调用封装 ──────────────────────────────────────────────────────────
+// 经同目录 mcp_call.js 直连 MCP HTTP 端点（零 npm 依赖）
 function mcpCall(tool, argsObj) {
-  var argsJson = JSON.stringify(argsObj);
-  try {
-    var stdout = execFileSync(
-      "mcporter",
-      ["call", MCP_SERVICE, tool, "--args", argsJson],
-      { encoding: "utf-8", timeout: 120000 }
-    );
-    return stdout.trim();
-  } catch (err) {
-    var msg = err.stderr || err.stdout || err.message || "unknown error";
-    throw new Error("mcporter call " + tool + " failed: " + msg);
-  }
+  return callMcp(tool, argsObj);
 }
 
 // ── 参数解析 ──────────────────────────────────────────────────────────────
@@ -98,7 +86,7 @@ function parseArgs() {
 
 // ── extract ──────────────────────────────────────────────────────────────
 
-function handleExtract(args) {
+async function handleExtract(args) {
   var image = "";
   var extractType = "basic";
   var withPositions = false;
@@ -120,17 +108,17 @@ function handleExtract(args) {
 
   console.log("⏳ 正在识别 " + path.basename(image) + " ...");
 
-  var result = mcpCall("ocr.extract", {
+  var result = await mcpCall("ocr.extract", {
     image_base64: encodeBase64(image),
     extract_type: extractType,
     with_positions: withPositions,
   });
-  console.log(result);
+  console.log(typeof result === "string" ? result : JSON.stringify(result));
 }
 
 // ── toword / toexcel ─────────────────────────────────────────────────────
 
-function handleConvert(action, args) {
+async function handleConvert(action, args) {
   var images = [];
   var title = "";
 
@@ -160,19 +148,21 @@ function handleConvert(action, args) {
   };
   if (title) callArgs.title = title;
 
-  var result = mcpCall("ocr." + action, callArgs);
-  console.log(result);
+  var result = await mcpCall("ocr." + action, callArgs);
+  console.log(typeof result === "string" ? result : JSON.stringify(result));
 }
 
 // ── 主流程 ────────────────────────────────────────────────────────────────
 
-function main() {
+async function main() {
   var parsed = parseArgs();
   if (parsed.action === "extract") {
-    handleExtract(parsed.rest);
+    await handleExtract(parsed.rest);
   } else {
-    handleConvert(parsed.action, parsed.rest);
+    await handleConvert(parsed.action, parsed.rest);
   }
 }
 
-main();
+main().catch(function (err) {
+  die(String((err && err.message) || err));
+});

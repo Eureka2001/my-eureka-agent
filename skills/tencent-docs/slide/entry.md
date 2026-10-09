@@ -12,7 +12,7 @@
 
 ## 0. 核心原则
 
-- 在线腾讯文档 PPT 全部走 `slide-mcp` 服务的 `mcp__slide-mcp__slide_*` 工具。
+- 在线腾讯文档 PPT 全部走主服务 `tencent-docs` 的 `slide_*` 工具（工具名以当前会话实际暴露的为准，按 `slide_` 前缀匹配即可）。
 - 任何写类 MCP 操作前必须有 DESIGN；没有 DESIGN 时通过 `slide_set_design` 的 `design_md` 参数直接持久化（禁止写本地 .md 文件再传参，造成重复）。
 - 0-1 构建整份 PPT、增加一页、整页重排，统一用 JSX + `slide_add_page_with_jsx`。
 - 修改某一页时，先生成脚本或批量调用方案，在脚本里调 MCP 工具，避免反复多轮调用。
@@ -27,9 +27,9 @@
 任何 Slide 工作流的第一步都必须运行状态脚本：
 
 ```bash
-bash sidebar-pptx-generator/scripts/get_slide_info.sh "<file_id>"
+node sidebar-pptx-generator/scripts/get_slide_info.js "<file_id>"
 # 或
-bash sidebar-pptx-generator/scripts/get_slide_info.sh "<file_url>"
+node sidebar-pptx-generator/scripts/get_slide_info.js "<file_url>"
 ```
 
 脚本要求：
@@ -124,8 +124,8 @@ DESIGN.md 的结构、字段和质量门禁以 `sidebar-pptx-generator/reference
    - 母版结构：标题位置、页码 / 页脚位置、装饰线 / 角标 / 视觉锚点；
    - 版式节奏：封面 / 章节页 / 内容页 / 数据页 / 结束页的典型布局；
    - 信息密度：每页平均字数、是否大量图表 / 图片、是否常用分栏。
-   - ⚠️ **不要**提取 / 抄录参考 PPT 的画布尺寸（`w_pt` / `h_pt` / 宽高比）。目标 PPT 的尺寸以第 1 节 `get_slide_info.sh` 返回的 `w_pt` / `h_pt` 为唯一基准，全部 JSX 都按这套尺寸排版。
-4. **把视觉要素落到 DESIGN**。在执行第 2 节 `slide_set_design` 之前，先把上面提炼出的色板、字体、母版、视觉锚点、密度约束写进 DESIGN，并在 DESIGN 顶部注明“风格参考自 file_id=<...> 第 [a, b, c] 页”，方便后续核对。**画布尺寸**（DESIGN 中如有 `slide_size` / `canvas` / `w_pt` / `h_pt` 之类字段）必须使用**目标 PPT 当前的实际尺寸**（即第 1 节 `get_slide_info.sh` 返回的 `w_pt` / `h_pt`），**不得**抄录参考 PPT 的尺寸；如果参考 PPT 与目标 PPT 宽高比不一致，所有版式 / 留白 / 字号要按目标 PPT 的画布做等比适配，而不是反过来调整目标 PPT 的尺寸。
+   - ⚠️ **不要**提取 / 抄录参考 PPT 的画布尺寸（`w_pt` / `h_pt` / 宽高比）。目标 PPT 的尺寸以第 1 节 `get_slide_info.js` 返回的 `w_pt` / `h_pt` 为唯一基准，全部 JSX 都按这套尺寸排版。
+4. **把视觉要素落到 DESIGN**。在执行第 2 节 `slide_set_design` 之前，先把上面提炼出的色板、字体、母版、视觉锚点、密度约束写进 DESIGN，并在 DESIGN 顶部注明“风格参考自 file_id=<...> 第 [a, b, c] 页”，方便后续核对。**画布尺寸**（DESIGN 中如有 `slide_size` / `canvas` / `w_pt` / `h_pt` 之类字段）必须使用**目标 PPT 当前的实际尺寸**（即第 1 节 `get_slide_info.js` 返回的 `w_pt` / `h_pt`），**不得**抄录参考 PPT 的尺寸；如果参考 PPT 与目标 PPT 宽高比不一致，所有版式 / 留白 / 字号要按目标 PPT 的画布做等比适配，而不是反过来调整目标 PPT 的尺寸。
 5. **JSX 生成阶段持续对标**。生成每页 JSX 前，对比同类型参考页的截图（封面对封面、内容页对内容页），确保版式、字号、留白节奏接近；不一致时优先调 JSX 而不是改 DESIGN。
 
 ### 3.5.2 适用场景与禁止行为
@@ -231,7 +231,7 @@ JSX 基本约束：
 4. 确认新页成功。
 5. 删除旧页。
 
-> 关于 `slide_*` 全量工具的字段、Schema 与边界条件，参见 `references/slideengine_references.md`。
+> `slide_*` 全量工具的字段、Schema 与边界条件，以会话内 `tools/list` 返回的实时 Schema 为准（本 fork 已移除本地 API 手册）。
 
 ---
 
@@ -244,10 +244,10 @@ JSX 基本约束：
 - 需要批量替换文本、颜色、位置或样式。
 - 需要根据 page_info 后处理出 shape_id 清单。
 
-脚本内部通过 `mcporter` 调用 MCP 工具，例如：
+脚本内部统一经共享封装 `mcp_call.js`（skill 根目录）调用工具——它自动携带厂商约定的 `TENCENT_DOCS_TOKEN` 环境变量、直连 MCP HTTP 端点并解包 JSON-RPC / SSE 信封，例如：
 
 ```bash
-mcporter call "slide-mcp" "<tool_name>" --args '<json>'
+node mcp_call.js "slide_set_text" '{"file_id":"<file_id>","page_index":0,"shape_id":"<shape_id>","text":"新文本"}'
 ```
 
 脚本要求：
@@ -314,7 +314,7 @@ mcporter call "slide-mcp" "<tool_name>" --args '<json>'
 |---|---|
 | `sidebar-pptx-generator/references/design-principle.md` | DESIGN.md 编写规范（结构、字段、自检门禁） |
 | `sidebar-pptx-generator/references/component-*.md` | JSX 组件语法规范（box / chart / codeblock / diagram / faicon / image / math / qrcode / slide / svg / table / text 等） |
-| `sidebar-pptx-generator/scripts/get_slide_info.sh` | 状态脚本，工作流入口 |
+| `sidebar-pptx-generator/scripts/get_slide_info.js` | 状态脚本，工作流入口 |
 | `sidebar-pptx-generator/scripts/setup.js` | slidep 工具链安装 / 升级（按需） |
 | `sidebar-pptx-generator/scripts/doc_image_extractor.py` | 文档图片素材提取（按需） |
-| `references/slideengine_references.md` | `slide_*` 系列工具完整 API Schema（精细编辑工具，含 `slide_export_pages_to_image_urls` 的字段说明） |
+| 会话内 `tools/list` 实时 Schema | `slide_*` 系列工具的字段与边界条件（含 `slide_export_pages_to_image_urls` 的字段说明）；本地 API 手册已在本 fork 中移除 |

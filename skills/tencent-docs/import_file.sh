@@ -13,7 +13,8 @@
 #   bash import_file.sh <file_path>
 #
 # 依赖：
-#   - mcporter（已配置 tencent-docs 服务）
+#   - Node.js (>= 14，经 mcp_call.js 直连 MCP 端点)
+#   - 环境变量 TENCENT_DOCS_TOKEN（厂商约定）
 #   - curl
 #   - md5sum 或 md5（macOS）
 #
@@ -28,6 +29,9 @@
 #
 
 set -euo pipefail
+
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+MCP_CALL_JS="$SCRIPT_DIR/mcp_call.js"
 
 # ── 参数校验 ──────────────────────────────────────────────────────────────────
 if [[ $# -lt 1 ]]; then
@@ -80,15 +84,16 @@ PRE_IMPORT_ARGS=$(cat <<EOF
 EOF
 )
 
-PRE_IMPORT_RESULT=$(mcporter call "tencent-docs" "manage.pre_import" --args "$PRE_IMPORT_ARGS" 2>&1) || {
+PRE_IMPORT_RESULT=$(node "$MCP_CALL_JS" "manage.pre_import" "$PRE_IMPORT_ARGS" 2>&1) || {
     echo "ERROR:pre_import_failed - manage.pre_import 调用失败: $PRE_IMPORT_RESULT"
     exit 1
 }
 
-# 解析返回的 upload_url 和 file_key
-UPLOAD_URL=$(echo "$PRE_IMPORT_RESULT" | jq -r '.upload_url // empty' 2>/dev/null || echo "")
-FILE_KEY=$(echo "$PRE_IMPORT_RESULT" | jq -r '.file_key // empty' 2>/dev/null || echo "")
-TASK_ID=$(echo "$PRE_IMPORT_RESULT" | jq -r '.task_id // empty' 2>/dev/null || echo "")
+# 解析返回的 upload_url 和 file_key（jq 非必需，用 node 解析）
+FIELDS=$(node -e 'const d=JSON.parse(process.argv[1]);console.log([d.upload_url||"",d.file_key||"",d.task_id||""].join("\n"))' "$PRE_IMPORT_RESULT" 2>/dev/null) || FIELDS=""
+UPLOAD_URL=$(echo "$FIELDS" | sed -n '1p')
+FILE_KEY=$(echo "$FIELDS" | sed -n '2p')
+TASK_ID=$(echo "$FIELDS" | sed -n '3p')
 
 if [[ -z "$UPLOAD_URL" ]]; then
     echo "ERROR:no_upload_url - 未获取到上传链接，pre_import 返回: $PRE_IMPORT_RESULT"
@@ -132,5 +137,5 @@ echo "FILE_MD5:$FILE_MD5"
 echo "TASK_ID:$TASK_ID"
 echo "FILE_SIZE:$FILE_SIZE"
 echo ""
-echo "📋 下一步：调用 manage.async_import 触发导入"
-echo "   mcporter call \"tencent-docs\" \"manage.async_import\" --args '{\"task_id\": \"$TASK_ID\", \"file_size\": \"$FILE_SIZE\", \"file_key\": \"$FILE_KEY\", \"file_name\": \"$FILE_NAME\", \"file_md5\": \"$FILE_MD5\"}'"
+echo "📋 下一步：会话内调用 MCP 工具 manage.async_import 触发导入"
+echo "   参数: {\"task_id\": \"$TASK_ID\", \"file_size\": \"$FILE_SIZE\", \"file_key\": \"$FILE_KEY\", \"file_name\": \"$FILE_NAME\", \"file_md5\": \"$FILE_MD5\"}"

@@ -56,9 +56,10 @@ AIPAGE_TITLE=立项方案
 
 ### Step 2：调用 `manage.pre_import` 获取 COS 上传链接
 
-```bash
-mcporter call "tencent-docs" "manage.pre_import" --args \
-  '{"file_name": "<basename(AIPAGE_PATH)>", "file_size": <AIPAGE_SIZE>, "file_md5": "<AIPAGE_MD5>"}'
+会话内调用 MCP 工具 `manage.pre_import`，参数：
+
+```json
+{"file_name": "<basename(AIPAGE_PATH)>", "file_size": <AIPAGE_SIZE>, "file_md5": "<AIPAGE_MD5>"}
 ```
 
 返回字段中需要：`upload_url`、`file_key`、`task_id`。
@@ -80,13 +81,14 @@ HTTP 2xx 视为上传成功。
 
 ### Step 4：触发异步导入并轮询
 
-```bash
-# 触发
-mcporter call "tencent-docs" "manage.async_import" --args \
-  '{"task_id":"<task_id>","file_key":"<file_key>","file_name":"<file_name>","file_md5":"<AIPAGE_MD5>","file_size":<AIPAGE_SIZE>}'
+会话内调用 MCP 工具（轮询建议每 3s 一次，最多 60s）：
 
-# 轮询（建议每 3s 一次，最多 60s）
-mcporter call "tencent-docs" "manage.import_progress" --args '{"task_id":"<task_id>"}'
+```json
+// 触发：manage.async_import
+{"task_id":"<task_id>","file_key":"<file_key>","file_name":"<file_name>","file_md5":"<AIPAGE_MD5>","file_size":<AIPAGE_SIZE>}
+
+// 轮询：manage.import_progress
+{"task_id":"<task_id>"}
 ```
 
 `progress=100` 时视为成功，从返回中拿 `file_id` / `file_url`，必要时用
@@ -109,10 +111,9 @@ TASK_ID=$( echo "$IMPORT_OUT" | awk -F: '/^TASK_ID:/{print $2}')
 FILE_KEY=$(echo "$IMPORT_OUT" | awk -F: '/^FILE_KEY:/{print $2}')
 FILE_NAME=$(echo "$IMPORT_OUT" | awk -F: '/^FILE_NAME:/{print $2}')
 
-# ④ async_import + 轮询
-mcporter call "tencent-docs" "manage.async_import" --args \
-  "{\"task_id\":\"$TASK_ID\",\"file_key\":\"$FILE_KEY\",\"file_name\":\"$FILE_NAME\",\"file_md5\":\"$AIPAGE_MD5\",\"file_size\":$AIPAGE_SIZE}"
-# 然后轮询 manage.import_progress 至 progress=100
+# ④ async_import + 轮询（会话内调用 MCP 工具）
+#   manage.async_import: {"task_id":"$TASK_ID","file_key":"$FILE_KEY","file_name":"$FILE_NAME","file_md5":"$AIPAGE_MD5","file_size":$AIPAGE_SIZE}
+#   然后轮询 manage.import_progress 至 progress=100
 ```
 
 ---
@@ -125,4 +126,4 @@ mcporter call "tencent-docs" "manage.async_import" --args \
   仍失败则把 stderr 与 `trace_id`（如有）回报用户，不要静默吞掉错误。
 - **成功输出**：拿到 `file_url` 后，独立发起一次 `preview_url` 工具调用，
   然后告知用户「已完成，在线地址如下 ↓」。
-- **常见错误码** 参见主 SKILL 的「问题定位指南」，鉴权失败优先看 `references/auth.md`。
+- **常见错误码** 参见主 SKILL 的「问题定位指南」，鉴权失败优先看 `README.md`（token 换新流程）。

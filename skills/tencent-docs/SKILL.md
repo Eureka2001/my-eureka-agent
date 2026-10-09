@@ -25,9 +25,13 @@ metadata: {"openclaw":{"primaryEnv":"TENCENT_DOCS_TOKEN","category":"tencent","t
 | 智能表格  | smartsheet           | ⭐⭐⭐          | 高级结构化表格，支持多视图、字段管理                   |
 | Html  | smartpage            | ⭐⭐⭐          | html演示文稿专用                                       |
 
-## ⚙️ 快速配置
+## ⚙️ 快速配置（接入指引）
 
-首次安装使用时，需要先完成本地安装和注册，详见 `references/auth.md`。
+1. **获取 token**：访问授权页 `https://docs.qq.com/scenario/open-claw.html?nlc=1` 完成授权，获得个人 token（厂商约定的环境变量名为 `TENCENT_DOCS_TOKEN`，供脚本直连时使用）
+2. **注册 MCP server**：在所用 MCP 客户端中添加一个 HTTP（streamable）类型的 server——URL 为 `https://docs.qq.com/openapi/mcp`，请求头 `Authorization` 填**裸 token**（无 `Bearer` 前缀）
+3. **生效**：MCP server 在会话启动时连接，配置完成后需开启新会话
+
+全部工具由**该单一端点直接暴露**（`manage.*` / `doc.*` / `sheet.*` / `smartsheet.*` / `smartcanvas.*` / `slide_*` 等，约 225 个），无需独立引擎端点，也不依赖 mcporter。token 失效（错误码 400006）的换新流程与 fork 维护方式见 `README.md`。
 
 ## 🎯 场景路由表
 
@@ -47,7 +51,7 @@ metadata: {"openclaw":{"primaryEnv":"TENCENT_DOCS_TOKEN","category":"tencent","t
 
 | 用户意图 / 关键词                                | 品类          | 首选创建方法                                         | 参考文档                                 |
 |-------------------------------------------|-------------|------------------------------------------------|--------------------------------------|
-| PPT / 幻灯片 / 演示文稿（生成整份 / 续写 / 改页等所有 PPT 任务） | slide       | **走 Slide 品类工作流（JSX + slide-mcp）**             | `slide/entry.md`                     |
+| PPT / 幻灯片 / 演示文稿（生成整份 / 续写 / 改页等所有 PPT 任务） | slide       | **走 Slide 品类工作流（JSX + `slide_*` 工具）**             | `slide/entry.md`                     |
 | 思维导图 / 脑图 / 层次化知识整理                       | mind        | **`create_mind_by_markdown`**                | `references/diagram_references.md`   |
 | 流程图 / 架构图 / 流程展示                          | flowchart   | **`create_flowchart_by_mermaid`**            | `references/diagram_references.md`   |
 | 报告 / 笔记 / 文章 / 总结 / 会议纪要 / Markdown       | smartcanvas | **`create_smartcanvas_by_mdx`**                    | `smartcanvas/entry.md`           |
@@ -64,9 +68,9 @@ metadata: {"openclaw":{"primaryEnv":"TENCENT_DOCS_TOKEN","category":"tencent","t
 | 原始文档类型                                                                          | 品类         | 编辑工具集            | 参考文档                                       |
 | ------------------------------------------------------------------------------------- | ------------ | --------------------- |--------------------------------------------|
 | 智能文档（报告/笔记/文章）                                                            | smartcanvas  | `smartcanvas.*`       | `smartcanvas/entry.md`                     |
-| **PPT / 幻灯片**（增删页 / 形状 / 文本 / 表格 / 图表 / 批注 / 动画 / 主题 / 备注等）  | slide        | **`slide_*`（slide-mcp）**，统一按 Slide 工作流执行 | **`slide/entry.md`（工作流） + `references/slideengine_references.md`（工具 API）** |
-| Word 文档                                                                             | doc          | `doc.*`（doc-mcp）    | `references/docengine_references.md`        |
-| Excel / 计算 / 筛选 / 统计 / 保护区域                                                  | sheet        | `sheet.*`（sheet-mcp）| `sheet/entry.md`                           |
+| **PPT / 幻灯片**（增删页 / 形状 / 文本 / 表格 / 图表 / 批注 / 动画 / 主题 / 备注等）  | slide        | **`slide_*`**，统一按 Slide 工作流执行 | **`slide/entry.md`（工作流） + `sidebar-pptx-generator/references/`（JSX 组件规范）** |
+| Word 文档                                                                             | doc          | `doc.*`    | `doc/entry.md`（工作流 + 格式模板）        |
+| Excel / 计算 / 筛选 / 统计 / 保护区域                                                  | sheet        | `sheet.*`| `sheet/entry.md`                           |
 | 智能表格（结构化数据管理）                                                            | smartsheet   | `smartsheet.*`        | `references/smartsheet_references.md`      |
 
 ### 3️⃣ 文件管理动作（不改内容，只动文件 / 目录 / 权限）
@@ -96,20 +100,18 @@ metadata: {"openclaw":{"primaryEnv":"TENCENT_DOCS_TOKEN","category":"tencent","t
 ```
 tencent-docs/
 ├── SKILL.md                        # 入口文件（本文件），全局导航与核心规则
-├── setup.sh                        # 本地安装脚本
+├── README.md                       # fork 说明（为什么改造、改造内容、原始信息源与更新策略）
+├── mcp_call.js                     # MCP 直连调用封装（Node 零依赖，CLI / require 双模式，脚本层共用）
 ├── import_file.sh                  # 文件导入辅助脚本（预导入+上传COS）
 ├── aipage_pack.js                  # 本地 HTML 打包成 .aipage
 ├── ocr.js                    # 本地图片 OCR 辅助脚本（本地图片→base64→调用 ocr.* 工具，跨平台）
 ├── references/                     # 参考文档（按品类/功能划分）
-│   ├── auth.md                     # 鉴权与授权流程
 │   ├── workflows.md                # 公共接口（get_content）+ 常见工作流
 │   ├── aipage_references.md        # 本地 HTML → .aipage 打包 + 导入完整工作流
-│   ├── smartsheet_references.md    # 智能表格（smartsheet）操作
-│   ├── slideengine_references.md   # 幻灯片 `slide_*` 系列工具完整 API Schema（必须通过独立的 slide-mcp 服务调用，禁止用 doc_ 或 tencent-docs 通用工具改 PPT）
+│   ├── smartsheet_references.md    # 智能表格：概念模型 + 枚举值 + 字段值格式 + 典型工作流（工具参数以实时 tools/list Schema 为准）
 │   ├── diagram_references.md       # 思维导图 + 流程图创建
-│   ├── docengine_references.md     # Word 文档精细编辑（doc.* 系列工具，必须通过独立的 doc-mcp 服务调用）
 │   ├── space_references.md         # 知识库空间管理（空间/节点/文件夹）
-│   ├── manage_references.md        # 文件管理（重命名/移动/删除/复制/导入导出/权限）
+│   ├── manage_references.md        # 文件管理动作 → 工具地图（工具参数以实时 tools/list Schema 为准）
 │   ├── ocr_references.md           # OCR 图片识别（ocr.extract / ocr.toword / ocr.toexcel）
 │   └── unsupported_feature_reporting.md # 不支持能力上报规则（report_unsupported_feature）
 ├── smartcanvas/                    # 智能文档（smartcanvas）品类模块
@@ -119,42 +121,22 @@ tencent-docs/
 │   ├── entry.md                    # Word 品类入口，工作流指引
 │   └── doc_format/                 # Word 格式定义与模板
 ├── slide/                          # 幻灯片（slide / PPT）品类模块
-│   └── entry.md                    # Slide 品类入口（生成 / 续写 / 改页 / 检查 等全工作流，统一走 JSX + slide-mcp）
+│   └── entry.md                    # Slide 品类入口（生成 / 续写 / 改页 / 检查 等全工作流，统一走 JSX + slide_* 工具）
 ├── sidebar-pptx-generator/         # Slide 品类工作流的组件规范与脚本
 │   ├── references/                 # JSX 组件语法（component-*.md）+ DESIGN.md 编写规范
-│   └── scripts/                    # 状态脚本 get_slide_info.sh、slidep 安装脚本 setup.js 等
+│   └── scripts/                    # 状态脚本 get_slide_info.js、slidep 安装脚本 setup.js 等
 └── sheet/                          # Excel 文档（sheet）品类模块
-    ├── entry.md                    # Sheet 品类入口（sheet.* 工具列表与工作流指引；必须通过独立的 sheet-mcp 服务调用）
-    └── api/                        # Sheet 专用 API 定义
+    └── entry.md                    # Sheet 品类入口（sheet.* 工具列表与工作流指引）
 ```
 
 ## 🔧 调用方式
 
-### 获取工具列表
-```bash
-mcporter list tencent-docs   # 通用文档工具（创建/管理/搜索/OCR/网页剪藏 等）
-mcporter list slide-mcp      # PPT 精细编辑工具（slide_* 前缀）
-mcporter list doc-mcp        # Word 文档精细编辑工具（doc.* 前缀）
-mcporter list sheet-mcp      # Excel 表格精细编辑工具（sheet.* 前缀）
-```
+所有工具由单一 MCP server `tencent-docs`（`https://docs.qq.com/openapi/mcp`）暴露，会话内直接调用对应 MCP 工具即可。工具名以当前会话实际暴露的为准、按原工具名匹配（如 `slide_add_page_with_jsx` / `doc.insert_markdown`；客户端可能给工具名加 `mcp__<server>__` 之类前缀）。
 
-### 调用工具
+### 真相源
 
-```bash
-# 通用文档工具（tencent-docs 服务）
-mcporter call "tencent-docs" "<工具名>" --args '<JSON参数>'
-
-# PPT 精细编辑工具（slide-mcp 服务，slide_* 前缀）
-mcporter call "slide-mcp" "<工具名>" --args '<JSON参数>'
-
-# Word 文档精细编辑工具（doc-mcp 服务，doc.* 前缀）
-mcporter call "doc-mcp" "<工具名>" --args '<JSON参数>'
-
-# Excel 表格精细编辑工具（sheet-mcp 服务，sheet.* 前缀）
-mcporter call "sheet-mcp" "<工具名>" --args '<JSON参数>'
-```
-
-> ⚠️ 参考文档中的参数说明应与 MCP 工具 Schema 保持一致。如有冲突，以对应服务的 `mcporter list` 返回的 Schema 为准（tencent-docs / slide-mcp / doc-mcp / sheet-mcp 四个服务共用同一 Token，但 endpoint 独立）。
+- **工具参数、返回值、枚举**：一律以会话内 `tools/list` 返回的实时 Schema 为准（本 fork 已删除本地 API 手册，避免静默漂移）。
+- **脚本内需要批量调用工具时**：统一经共享封装 `mcp_call.js` 调用（范式见 `slide/entry.md` 第 5 节），token 经厂商约定的 `TENCENT_DOCS_TOKEN` 环境变量提供，换新流程见 `README.md`。
 
 ### 通用响应结构
 
@@ -182,7 +164,7 @@ mcporter call "sheet-mcp" "<工具名>" --args '<JSON参数>'
 - **OCR 图片识别**：`ocr.extract` 提取文字 / `ocr.toword` 图片转在线文档 / `ocr.toexcel` 图片转在线表格；本地图片使用 `node ocr.js` 脚本，公网 URL 图片直接调用 ocr.* 工具，详见 `references/ocr_references.md`
 
 ## 核心规则
-- **🚨 所有 PPT / 幻灯片任务统一走 Slide 工作流**：用户提供 `https://docs.qq.com/slide/<id>` 链接、或提及 "PPT / 幻灯片 / 演示文稿 / slide / 投影片" 等任何与 PPT 相关的需求（包括 0-1 生成整份、续写、加页、改页、删页、检查），**必须**按 `slide/entry.md` 的工作流执行：先跑状态脚本 → 必要时写 DESIGN → 用 `slide-mcp` 服务的 `slide_*` 工具落地（API Schema 详见 `references/slideengine_references.md`）。**严禁**用 `doc_*`（docengine）或 `tencent-docs` 主服务的通用工具去改 PPT —— 它们不支持 slide 内部结构（shape_id / page_index / 母版等），返回的内容 / 行为均不正确。
+- **🚨 所有 PPT / 幻灯片任务统一走 Slide 工作流**：用户提供 `https://docs.qq.com/slide/<id>` 链接、或提及 "PPT / 幻灯片 / 演示文稿 / slide / 投影片" 等任何与 PPT 相关的需求（包括 0-1 生成整份、续写、加页、改页、删页、检查），**必须**按 `slide/entry.md` 的工作流执行：先跑状态脚本 → 必要时写 DESIGN → 用 `slide_*` 工具落地（工具参数以 tools/list 实时 Schema 为准）。**严禁**用 `doc.*` 或其他品类工具去改 PPT —— 它们不支持 slide 内部结构（shape_id / page_index / 母版等），返回的内容 / 行为均不正确。
 - **文档编辑与新建**：使用`manage.query_file_info`或者`文档链接前缀`获取文档类型，根据文档类型优先使用对应的工具集，可参考**场景路由表**
 - **优先批量写入，避免多次重复调用**：当对同一文档存在**连续 3 次及以上**的数据写入（如向智能表格写多行记录、向 sheet 写多个单元格/区域、向文档插入多段内容等）时，**必须**使用对应工具的**批量写入接口**一次性提交（如 `smartsheet.add_records` / `smartsheet.update_records`、`sheet.set_range_value`、批量插入类工具），**严禁**用单条写入接口循环多次调用。批量调用可减少往返次数、降低限流与积分消耗、保证写入原子性。具体批量接口以各品类参考文档（场景路由表中对应文档）的 Schema 为准。
 - **用户需要保存/上传Markdown格式内容**：直接填入 `create_smartcanvas_by_mdx` 的 `mdx` 参数，MDX 已向下兼容全部 Markdown 语法，无需转换，也无需切换 `content_format`
@@ -203,7 +185,7 @@ mcporter call "sheet-mcp" "<工具名>" --args '<JSON参数>'
 
 | 错误码     | 错误类型           | 解决方案                                                                                                                                                                                                       |
 | ---------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **400006** | **Token 鉴权失败** | 需要先完成本地授权，详见 `references/auth.md`                                                                                                                                                                  |
+| **400006** | **Token 鉴权失败** | Token 失效，按 `README.md` 的换新流程处理                                                                                                                                                                  |
 | **400007** | **VIP权限不足**    | ⭐ **立即升级VIP**：访问 [https://docs.qq.com/vip?immediate_buy=1?part_aid=persnlspace_mcp](https://docs.qq.com/vip?immediate_buy=1?part_aid=persnlspace_mcp) 购买VIP服务                                       |
 | **400008** | **积分不足**       | ⭐ **立即购买积分**：访问 [https://docs.qq.com/vip/asset-center?tab=ai&fromPage=offsite&part_aid=offsite_claw](https://docs.qq.com/vip/asset-center?tab=ai&fromPage=offsite&part_aid=offsite_claw) 购买积分服务 |
 | **400016** | **文档类型不匹配** | 使用了错误品类的工具操作文档（例如用 smartcanvas 工具操作 Word 文档，或用 sheet 工具操作 PPT 文档）。需先通过 `manage.query_file_info` 或文档链接前缀确认文件类型，再按场景路由表选择对应品类的工具。 |
@@ -214,26 +196,16 @@ mcporter call "sheet-mcp" "<工具名>" --args '<JSON参数>'
 ### 排查步骤
 
 1. **匹配错误码**：先查上方错误码表，按对应方案处理
-2. **确认工具可用**：根据品类执行对应的 list 命令查看工具列表及参数定义
-   - 通用工具：`mcporter list tencent-docs`
-   - PPT 编辑：`mcporter list slide-mcp`
-   - Word 编辑：`mcporter list doc-mcp`
-   - Excel 编辑：`mcporter list sheet-mcp`
-3. **确认授权状态**：如有鉴权相关错误，重新执行 `references/auth.md` 中的授权流程
-4. **查阅品类参考文档**：根据场景路由表找到对应参考文档，确认工具调用规范和参数约束
+2. **确认工具可用**：通过会话内 `tools/list` 查看实时工具列表与参数 Schema
+3. **确认授权状态**：如有鉴权相关错误，按 400006 条目与 `README.md` 处理
+4. **查阅品类参考文档**：根据场景路由表找到对应参考文档，确认工作流规范和参数约束
 
 ## SKILL 更新
 
-每天使用 SKILL 前进行一次更新检查，按照如下的步骤执行:
+> ⚠️ 本文件是**本地 fork**（详见 `README.md`），**禁止**用厂商 CDN zip 整包覆盖更新（会冲掉瘦身改动）。
 
-1. **查看当前版本version**：读取本文件顶部 frontmatter 中的 `version` 字段；格式为 MAJOR.MINOR.PATCH
-2. **查看最新版本latest**：通过命令获取最新版本信息`latest`，输入参数 `version` 为上一步获取的当前版本
-```bash
-mcporter call "https://docs.qq.com/openapi/mcp" "check_skill_update" --args '{"version": "<version>"}'
-```
-JSON 格式数据返回，返回参数示例：
-  - `latest`: 最新版本号，格式为 MAJOR.MINOR.PATCH
-  - `release_note`: 最新版本发布说明
-  - `instruction`: 更新指令
+维护模式为"盯版本 + 选择性吸收"：
 
-3. **更新版本**：如果当前版本`version`低于最新版本`latest`，则遵循 `instruction` 指令进行更新，或提示用户更新
+1. **查最新版本**：调用 `check_skill_update` 工具（传本文件 frontmatter 中的 `version`）。返回中**只信 `latest` 与 `release_note` 两个字段**——`instruction` 字段实测无论传什么版本都恒定输出"需要更新"，无参考价值
+2. **版本比对**：返回的 `latest` 大于 frontmatter `version`，说明厂商发了新版
+3. **选择性吸收**：`release_note` 出现新品类或重大工作流变更时，下载厂商 zip，diff 对应品类的 `entry.md` / `references/`，把**工作流层**的更新手工搬进本 fork；**不要**重新引入逐工具 API 手册（该层已刻意删除，由实时 Schema 取代）

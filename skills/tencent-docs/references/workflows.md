@@ -75,7 +75,7 @@
 
 ### 用 Markdown 创建 Word 文档
 
-**📖 参考文档：** `manage_references.md` — manage.create_file；`docengine_references.md` — doc.get_last_operable_pos、doc.insert_markdown
+**📖 参考文档：** `manage_references.md` — manage.create_file；`doc.*` 工具参数以会话内 tools/list 实时 Schema 为准
 
 通过「`manage.create_file` 创建空 Word 文档 + `doc.insert_markdown` 插入 Markdown 内容」的组合，可将 Markdown 内容写入一个新的 Word 文档。
 
@@ -131,7 +131,7 @@
 
 ## 在指定目录创建文档
 
-**📖 参考文档：** `manage_references.md` — 典型工作流示例
+**📖 参考文档：** `manage_references.md` — 工具地图
 
 ```
 1. 调用 manage.folder_list 获取文件夹目录
@@ -148,7 +148,7 @@
 
 ## 移动文件
 
-**📖 参考文档：** `manage_references.md` — 工作流十：移动文件
+**📖 参考文档：** `manage_references.md` — 工具地图：manage.move_file / manage.move_file_to_space
 
 ---
 
@@ -158,7 +158,7 @@
 1. 搜索文档 → manage.search_file（传入用户指定的关键词）
 ```
 
-> 📖 更多文件管理工作流示例请参考：`manage_references.md` — 典型工作流示例
+> 📖 更多文件管理工具见：`manage_references.md` — 工具地图
 
 ---
 

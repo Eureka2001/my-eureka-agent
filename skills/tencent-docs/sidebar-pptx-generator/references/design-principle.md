@@ -1,6 +1,6 @@
 # DESIGN.md 编写原则
 
-DESIGN.md 是 slide-mcp 写类工具的前置设计契约。它只回答“这份 PPT 应该长什么样，以及 JSX 应如何落地”，不要重复完整叙事内容。
+DESIGN.md 是 slide_* 写类工具的前置设计契约。它只回答“这份 PPT 应该长什么样，以及 JSX 应如何落地”，不要重复完整叙事内容。
 
 ## 1. DESIGN 的输入
 

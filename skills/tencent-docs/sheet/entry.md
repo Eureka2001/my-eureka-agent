@@ -1,6 +1,6 @@
 # Excel 文档（sheet）品类操作指引
 
-本目录提供 Excel 文档（sheet）品类的专业操作能力，包括计算、筛选、统计、Excel操作相关场景。sheet 工具通过独立的 `sheet-mcp` MCP 服务调用，工具名以 `sheet.` 为前缀。
+本目录提供 Excel 文档（sheet）品类的专业操作能力，包括计算、筛选、统计、Excel操作相关场景。sheet 工具由 `tencent-docs` 主 MCP 服务直接暴露，工具名以 `sheet.` 为前缀。
 
 ## 使用场景
 
@@ -11,16 +11,14 @@
 
 ## 服务信息
 
-| 项目     | 说明                                                                             |
-| -------- | -------------------------------------------------------------------------------- |
-| 所属服务 | `sheet-mcp`                                                                      |
-| 服务地址 | `https://docs.qq.com/api/v6/sheet/mcp`                                           |
-| 工具前缀 | `sheet.*`（如 `sheet.get_cell_data`、`sheet.set_cell_value`）                    |
-| 调用方式 | 通过 MCP 协议调用 sheet-mcp 服务（`mcporter call "sheet-mcp" "sheet.<工具名>"`） |
-| Token    | 与 tencent-docs / slide-mcp / doc-mcp 共用同一 Token，完成授权后自动配置         |
-| 文档类型 | 仅支持 Sheet 文档类型                                                            |
-
-> ⚠️ **所有 `sheet.*` 工具均通过 `sheet-mcp` 独立 MCP 服务调用**，与 `tencent-docs` 主服务平级。Token 共用，但工具调用走独立 endpoint。
+| 项目     | 说明                                                                        |
+| -------- | --------------------------------------------------------------------------- |
+| 所属服务 | `tencent-docs`（主服务，单一端点）                                          |
+| 服务地址 | `https://docs.qq.com/openapi/mcp`                                           |
+| 工具前缀 | `sheet.*`（如 `sheet.get_cell_data`、`sheet.set_cell_value`）               |
+| 调用方式 | 会话内直接调用 MCP 工具（工具名以当前会话实际暴露的为准）                     |
+| Token    | Authorization 头携带个人 token，失效换新见 `../README.md`                      |
+| 文档类型 | 仅支持 Sheet 文档类型                                                       |
 
 ---
 
@@ -96,7 +94,7 @@ sheet 工具优先使用 `file_id` 标识文档；支持 `file_url` 的工具也
 - 操作前需确保拥有文档的写入权限（查询类工具需读取权限）
 - 所有行、列索引均从 0 开始计数（0-based）
 - 颜色一般使用 ARGB hex 格式（如 `"FF000000"` 表示黑色）
-- 详细 API 参数和调用示例请参考 `api/mcp-api.md`
+- 详细 API 参数和调用示例以会话内 `tools/list` 实时 Schema 为准
 
 ---
 
