@@ -162,6 +162,18 @@
 
 ---
 
+## 导出文档
+
+**📖 参考文档：** `manage_references.md` — 工具地图：manage.export_file / manage.export_progress
+
+```
+1. 调用 manage.export_file（传入 file_id）→ 返回 task_id
+2. 轮询 manage.export_progress（通常即时完成）→ progress=100 时返回带签名的 file_url
+3. ⚠️ 签名 URL 仅约 30 分钟有效，拿到后立即下载（curl 保存为 .docx）
+```
+
+---
+
 ## 网页剪藏
 
 将网页内容抓取并自动保存为智能文档。当用户发送、分享或提到任何网页 URL 链接时，必须优先使用此工作流，这是获取外部网页内容的唯一正确方式。

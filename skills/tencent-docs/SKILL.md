@@ -118,7 +118,7 @@ tencent-docs/
 │   ├── entry.md                    # 智能文档（smartcanvas）品类入口，创建与编辑。MDX 格式，兼容全部 Markdown 语法
 │   └── mdx_references.md           # MDX 格式规范（smartcanvas 内容格式）
 ├── doc/                            # Word 文档（doc）品类模块
-│   ├── entry.md                    # Word 品类入口，工作流指引
+│   ├── entry.md                    # Word 品类入口，工作流指引 + 已知边界（历史实测）
 │   └── doc_format/                 # Word 格式定义与模板
 ├── slide/                          # 幻灯片（slide / PPT）品类模块
 │   └── entry.md                    # Slide 品类入口（生成 / 续写 / 改页 / 检查 等全工作流，统一走 JSX + slide_* 工具）
