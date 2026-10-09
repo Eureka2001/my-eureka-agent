@@ -11,6 +11,7 @@
 | `ocr/` | 图片/PDF 文字识别（便宜、适合 PDF） | 阿里云 RecognizeGeneral | `ALIYUN_OCR_AK_ID` / `ALIYUN_OCR_AK_SECRET` |
 | `vision/` | 图像语义理解（海报/图表/场景） | GLM-4.6V 或 Qwen-VL（env 切换） | `GLM_API_KEY` / `DASHSCOPE_API_KEY` |
 | `fetch/` | 网页抓取（JS 渲染、懒加载） | Playwright | 无 |
+| `habitica/` | Habitica 账户、任务、打卡、清单和标签（仅 STDIO） | Habitica 官方 API / FastMCP | `HABITICA_USER_ID` / `HABITICA_API_TOKEN` |
 | `mcp_server_askecho_search_infinity/` | 联网搜索（结构化结果、权威分级） | 火山引擎豆包搜索 API | `ASK_ECHO_SEARCH_INFINITY_API_KEY` 或 `VOLCENGINE_ACCESS_KEY`/`VOLCENGINE_SECRET_KEY` |
 
 四者非替代关系：解码→eureka_qrcode，PDF/文档文字→eureka_ocr，图像语义理解→eureka_vision，网页→eureka_fetch，联网搜索→eureka_search。
@@ -20,7 +21,7 @@
 
 ## 统一约定
 
-- **transport 双模**：默认 stdio；`MCP_TRANSPORT=http` 或 `--http` 走 streamable-http。
+- **transport**：默认 stdio；原有通用服务支持 `MCP_TRANSPORT=http` 或 `--http` 走 streamable-http，`habitica/` 按使用需求仅支持 STDIO。
 - **stdio 铁律**：诊断信息只写 stderr，绝不写 stdout。
 - **运行**：`cd <server> && uv run server.py`（search 用 `uv run mcp-server-askecho-search-infinity`）；fetch 首次需 `uv run playwright install chromium`。
-- **MCP 命名**：server 注册名统一 `eureka_` 前缀（`eureka_fetch` / `eureka_ocr` / `eureka_qrcode` / `eureka_vision` / `eureka_search`）；工具名保留描述性原名（如 `doubao_search`、`playwright_fetch`），便于后续扩展新工具。
+- **MCP 命名**：server 注册名统一 `eureka_` 前缀（`eureka_fetch` / `eureka_ocr` / `eureka_qrcode` / `eureka_vision` / `eureka_search` / `eureka_habitica`）；工具名保留描述性原名（如 `doubao_search`、`playwright_fetch`），便于后续扩展新工具。
