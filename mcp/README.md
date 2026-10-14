@@ -3,6 +3,24 @@
 给各 AI Agent（Claude Code / Qoder / ChatGPT Work 等）做能力兜底的本地 MCP server。
 每个 server 一个独立 uv 项目，依赖隔离；凭据全部走环境变量（仓库零凭据）。
 
+## 接入方式：网关 HTTP 常驻
+
+各 Agent 客户端指向网关的 HTTP 端点（仓库根 `mcp.json` 为源文件）：
+
+```json
+"eureka": {
+  "type": "http",
+  "url": "http://127.0.0.1:1820/mcp"
+}
+```
+
+（Codex 的 TOML 形式：`[mcp_servers.eureka]` + `url = "http://127.0.0.1:1820/mcp"`。）
+
+网关需先于客户端会话启动，后台启动/看日志/停止的一条命令见 `gateway/README.md`
+的「后台常驻」一节。网关把下列全部 server 聚合为 `mcp__eureka__*` 工具：后端
+按需 spawn、空闲 180s 回收、崩溃自动重启。单独调试某个 server 时仍可按老方式
+`cd <server> && uv run server.py` 直挂（或网关跑 stdio 形态）。
+
 ## 能力分工（并列，按场景选）
 
 | server | 定位 | 主后端 | 凭据 env |
@@ -24,4 +42,4 @@
 - **transport**：默认 stdio；原有通用服务支持 `MCP_TRANSPORT=http` 或 `--http` 走 streamable-http，`habitica/` 按使用需求仅支持 STDIO。
 - **stdio 铁律**：诊断信息只写 stderr，绝不写 stdout。
 - **运行**：`cd <server> && uv run server.py`（search 用 `uv run mcp-server-askecho-search-infinity`）；fetch 首次需 `uv run playwright install chromium`。
-- **MCP 命名**：server 注册名统一 `eureka_` 前缀（`eureka_fetch` / `eureka_ocr` / `eureka_qrcode` / `eureka_vision` / `eureka_search` / `eureka_habitica`）；工具名保留描述性原名（如 `doubao_search`、`playwright_fetch`），便于后续扩展新工具。
+- **MCP 命名**：客户端统一注册名为 `eureka`（网关，工具形如 `mcp__eureka__playwright_fetch`）；server 内部注册名保留 `eureka_` 前缀（`eureka_fetch` / `eureka_ocr` / `eureka_qrcode` / `eureka_vision` / `eureka_search` / `eureka_habitica`），工具名保留描述性原名（如 `doubao_search`、`playwright_fetch`）。
