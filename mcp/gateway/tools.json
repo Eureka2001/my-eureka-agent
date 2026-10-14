@@ -1,0 +1,1420 @@
+{
+  "generated_at": "2026-10-14T17:18:58+08:00",
+  "backends": [
+    "fetch",
+    "habitica",
+    "ocr",
+    "qrcode",
+    "search",
+    "vision"
+  ],
+  "tools": [
+    {
+      "name": "add_checklist_item",
+      "backend": "habitica",
+      "description": "向 daily 或 todo 添加清单项，返回更新后的任务及清单 ID。",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Text",
+            "type": "string"
+          },
+          "completed": {
+            "default": false,
+            "title": "Completed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task_id",
+          "text"
+        ],
+        "title": "add_checklist_itemArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "add_checklist_itemDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    {
+      "name": "aliyun_ocr",
+      "backend": "ocr",
+      "description": "识别图片或 PDF 中的文字，返回 OCR 模型给出的文本。\n\n    适合：文档/截图/扫描件/PDF 的文字抽取，对于艺术字、小语种处理能力较弱。\n\n    Args:\n        image: 图片/PDF 来源，支持以下任一形式：\n            - 本地文件路径（图片或 PDF）\n            - http(s) URL\n            - data: URI\n            - 裸 base64 字符串\n    ",
+      "inputSchema": {
+        "properties": {
+          "image": {
+            "title": "Image",
+            "type": "string"
+          }
+        },
+        "required": [
+          "image"
+        ],
+        "title": "aliyun_ocrArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "title": "Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "aliyun_ocrOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "create_tag",
+      "backend": "habitica",
+      "description": "新建标签，返回标签名称和 UUID。",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "create_tagArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "create_tagDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    {
+      "name": "create_task",
+      "backend": "habitica",
+      "description": "创建 habit/daily/todo/reward。\n\nArgs:\n    task: 必填 type/text。可选 notes/priority/tags/checklist；todo 用 date，\n        daily 用 frequency/everyX/repeat/startDate，habit 用 up/down，reward 用 value。\n        priority 为 0.1/1/1.5/2（琐碎/简单/中等/困难）。\n",
+      "inputSchema": {
+        "$defs": {
+          "ChecklistItem": {
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "maxLength": 5000,
+                "minLength": 1,
+                "pattern": "\\S",
+                "title": "Text",
+                "type": "string"
+              },
+              "completed": {
+                "default": false,
+                "title": "Completed",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "text"
+            ],
+            "title": "ChecklistItem",
+            "type": "object"
+          },
+          "Difficulty": {
+            "enum": [
+              0.1,
+              1.0,
+              1.5,
+              2.0
+            ],
+            "title": "Difficulty",
+            "type": "number"
+          },
+          "TaskCreate": {
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "maxLength": 5000,
+                "minLength": 1,
+                "pattern": "\\S",
+                "title": "Text",
+                "type": "string"
+              },
+              "notes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Notes"
+              },
+              "priority": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Difficulty"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "tags": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tags"
+              },
+              "attribute": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "str",
+                      "int",
+                      "per",
+                      "con"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Attribute"
+              },
+              "alias": {
+                "anyOf": [
+                  {
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Alias"
+              },
+              "date": {
+                "anyOf": [
+                  {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Date"
+              },
+              "frequency": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "daily",
+                      "weekly",
+                      "monthly",
+                      "yearly"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Frequency"
+              },
+              "everyX": {
+                "anyOf": [
+                  {
+                    "maximum": 9999,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Everyx"
+              },
+              "repeat": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {
+                      "type": "boolean"
+                    },
+                    "propertyNames": {
+                      "enum": [
+                        "su",
+                        "m",
+                        "t",
+                        "w",
+                        "th",
+                        "f",
+                        "s"
+                      ]
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Repeat"
+              },
+              "startDate": {
+                "anyOf": [
+                  {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Startdate"
+              },
+              "daysOfMonth": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "maximum": 31,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Daysofmonth"
+              },
+              "weeksOfMonth": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Weeksofmonth"
+              },
+              "up": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Up"
+              },
+              "down": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Down"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Value"
+              },
+              "collapseChecklist": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Collapsechecklist"
+              },
+              "type": {
+                "enum": [
+                  "habit",
+                  "daily",
+                  "todo",
+                  "reward"
+                ],
+                "title": "Type",
+                "type": "string"
+              },
+              "checklist": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/ChecklistItem"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Checklist"
+              }
+            },
+            "required": [
+              "text",
+              "type"
+            ],
+            "title": "TaskCreate",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "task": {
+            "$ref": "#/$defs/TaskCreate"
+          }
+        },
+        "required": [
+          "task"
+        ],
+        "title": "create_taskArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "create_taskDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false
+      }
+    },
+    {
+      "name": "decode_qrcode",
+      "backend": "qrcode",
+      "description": "从图片解码 QR 码及条形码，返回每个码的内容，每行一个。\n\n    本工具为确定性、离线解码，不调用 VLM。适合需要 100% 可靠结果、或断网场景。\n\n    Args:\n        image: 图片来源，支持以下任一形式：\n            - 本地文件绝对/相对路径\n            - http(s) URL\n            - data: URI（data:image/png;base64,...）\n            - 裸 base64 字符串\n    ",
+      "inputSchema": {
+        "properties": {
+          "image": {
+            "title": "Image",
+            "type": "string"
+          }
+        },
+        "required": [
+          "image"
+        ],
+        "title": "decode_qrcodeArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "title": "Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "decode_qrcodeOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "delete_checklist_item",
+      "backend": "habitica",
+      "description": "删除任务里的一个清单项，返回更新后的任务。",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "item_id"
+        ],
+        "title": "delete_checklist_itemArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "delete_checklist_itemDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "delete_tag",
+      "backend": "habitica",
+      "description": "删除指定标签，也会从使用该标签的任务上移除它。",
+      "inputSchema": {
+        "properties": {
+          "tag_id": {
+            "format": "uuid",
+            "title": "Tag Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tag_id"
+        ],
+        "title": "delete_tagArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "delete_tagDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "delete_task",
+      "backend": "habitica",
+      "description": "删除用户指定的任务；会移除其备注和清单，不可通过此工具恢复。",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "title": "delete_taskArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "delete_taskDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "doubao_search",
+      "backend": "search",
+      "description": "\n    联网搜索 API 调用，支持网页和图片搜索\n    Args:\n        Query (str): 搜索 query，1~100 个字符\n        Count (int): 返回条数，web 最多 50 条，image 最多 5 条\n        SearchType (str): 搜索类型，仅支持 web 或 image\n        TimeRange (str): web 搜索时间范围，可选 OneDay/OneWeek/OneMonth/OneYear 或日期区间\n        AuthLevel (int): 权威等级过滤，0 为默认，1 为非常权威\n    Returns:\n        联网搜索结果返回结构\n    ",
+      "inputSchema": {
+        "properties": {
+          "Query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "Count": {
+            "default": 10,
+            "title": "Count",
+            "type": "integer"
+          },
+          "SearchType": {
+            "default": "web",
+            "title": "Searchtype",
+            "type": "string"
+          },
+          "TimeRange": {
+            "default": "",
+            "title": "Timerange",
+            "type": "string"
+          },
+          "AuthLevel": {
+            "default": 0,
+            "title": "Authlevel",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "Query"
+        ],
+        "title": "doubao_searchArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "additionalProperties": true,
+            "title": "Result",
+            "type": "object"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "doubao_searchOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "fetch_health",
+      "backend": "fetch",
+      "description": "检查 Playwright chromium 内核是否已安装。",
+      "inputSchema": {
+        "properties": {},
+        "title": "fetch_healthArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "title": "Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "fetch_healthOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_task",
+      "backend": "habitica",
+      "description": "根据任务 UUID 或别名读取详情（包括 checklist 中的 item ID）。",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id"
+        ],
+        "title": "get_taskArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "get_taskDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "get_user",
+      "backend": "habitica",
+      "description": "读取账户名称、等级/生命值/经验/金币等状态及日重置设置。",
+      "inputSchema": {
+        "properties": {},
+        "title": "get_userArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "get_userDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "habitica_health",
+      "backend": "habitica",
+      "description": "通过一次账户查询验证 Habitica 认证和连接，不变更账户。",
+      "inputSchema": {
+        "properties": {},
+        "title": "habitica_healthArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "habitica_healthDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "list_tags",
+      "backend": "habitica",
+      "description": "列出账户标签的名称和 UUID，可用于创建或更新任务的 tags 字段。",
+      "inputSchema": {
+        "properties": {},
+        "title": "list_tagsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Result",
+            "type": "array"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "list_tagsOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "list_tasks",
+      "backend": "habitica",
+      "description": "列出任务；返回任务 ID、内容、清单和状态，可据此决定后续操作。\n\nArgs:\n    task_type: habits/dailys/todos/rewards/completedTodos。省略返回全部未完成任务\n        及习惯、每日任务和奖励；completedTodos 只返回最近 30 个已完成待办。\n",
+      "inputSchema": {
+        "properties": {
+          "task_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "habits",
+                  "dailys",
+                  "todos",
+                  "rewards",
+                  "completedTodos"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Task Type"
+          }
+        },
+        "title": "list_tasksArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Result",
+            "type": "array"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "list_tasksOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "ocr_health",
+      "backend": "ocr",
+      "description": "检查 OCR 凭据是否已配置（不发请求，仅校验环境变量）。",
+      "inputSchema": {
+        "properties": {},
+        "title": "ocr_healthArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "title": "Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "ocr_healthOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "playwright_fetch",
+      "backend": "fetch",
+      "description": "用无头浏览器抓取并渲染网页，返回 markdown 正文；末尾附「图片清单」。\n\n    图片清单只含**客观信息**：分辨率、显示尺寸、字节数、alt、URL（已去重、过滤\n    短边小于 min_short_side 的图标/装饰与 data URI）。\n\n    Args:\n        url: 目标网页地址。\n        wait_seconds: 首屏后额外等待秒数，给 JS/网络完成留时间。\n        scroll_to_load: 是否逐屏滚动以触发懒加载内容。\n        max_chars: 返回（正文+清单）总字符上限。\n        start_index: 从第几个字符开始返回（用于分页续读上次被截断的内容）。\n        precise_sizes: 为 True 时，对未暴露 Content-Length 的图用 httpx 实测字节数（更准但更慢，一般并无必要）。\n        min_short_side: 图片短边最小像素阈值，短边小于此值的图视为图标/装饰而被过滤，默认 100。\n        use_readability: 为 True 时，用 Readability 算法先提取正文区域再转 markdown（去噪更好，适合文章页；对复杂布局页面可能误判，此时建议关闭）。\n    ",
+      "inputSchema": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          },
+          "wait_seconds": {
+            "default": 2.0,
+            "title": "Wait Seconds",
+            "type": "number"
+          },
+          "scroll_to_load": {
+            "default": true,
+            "title": "Scroll To Load",
+            "type": "boolean"
+          },
+          "max_chars": {
+            "default": 20000,
+            "title": "Max Chars",
+            "type": "integer"
+          },
+          "start_index": {
+            "default": 0,
+            "title": "Start Index",
+            "type": "integer"
+          },
+          "precise_sizes": {
+            "default": false,
+            "title": "Precise Sizes",
+            "type": "boolean"
+          },
+          "min_short_side": {
+            "default": 100,
+            "title": "Min Short Side",
+            "type": "integer"
+          },
+          "use_readability": {
+            "default": true,
+            "title": "Use Readability",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "playwright_fetchArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "title": "Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "playwright_fetchOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "qr_backends",
+      "backend": "qrcode",
+      "description": "报告当前可用的解码后端及其状态，便于排查环境问题。",
+      "inputSchema": {
+        "properties": {},
+        "title": "qr_backendsArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "title": "Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "qr_backendsOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "score_task",
+      "backend": "habitica",
+      "description": "打卡或取消打卡一次；可能改变经验、生命值和金币，不要自动重复调用。\n\nArgs:\n    task_id: 任务 UUID 或别名。\n    direction: up=正向习惯/完成 daily 或 todo/兑换自定义 reward（扣金币）；\n        down=负向习惯/取消 daily 或 todo 完成。reward 仅支持 up。\n",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "up",
+              "down"
+            ],
+            "title": "Direction",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "direction"
+        ],
+        "title": "score_taskArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "score_taskDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": false
+      }
+    },
+    {
+      "name": "understand_image",
+      "backend": "vision",
+      "description": "用多模态大模型理解图片，返回文字描述或对 prompt 的回答。\n\n    适用：海报、图表、场景图、UI 截图等需要「语义理解」的场景。\n    如果是纯粹的文档/PDF 文字抽取请用 eureka_ocr server（更便宜）；二维码解码请用 eureka_qrcode server。\n\n    Args:\n        image: 图片来源：本地路径 / http(s) URL / data: URI / 裸 base64。\n        prompt: 想让模型回答的问题或指令，默认「描述图片内容」。\n        backend: glm 或 qwen；留空则读环境变量 VISION_BACKEND（默认 glm）。\n    ",
+      "inputSchema": {
+        "properties": {
+          "image": {
+            "title": "Image",
+            "type": "string"
+          },
+          "prompt": {
+            "default": "请详细、准确地描述这张图片的内容，这张图片是什么类型，主要内容是什么，有无需要额外关注的元素。",
+            "title": "Prompt",
+            "type": "string"
+          },
+          "backend": {
+            "default": "",
+            "title": "Backend",
+            "type": "string"
+          }
+        },
+        "required": [
+          "image"
+        ],
+        "title": "understand_imageArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "title": "Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "understand_imageOutput",
+        "type": "object"
+      }
+    },
+    {
+      "name": "update_checklist_item",
+      "backend": "habitica",
+      "description": "设置清单项的文字和完成状态；先查询并保留不想修改的值。\n\nArgs:\n    task_id: daily 或 todo 的任务 ID。\n    item_id: 清单项 UUID。\n    text: 清单项文字。\n    completed: true=完成，false=未完成。设为明确状态，不做反转操作。\n",
+      "inputSchema": {
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "item_id": {
+            "format": "uuid",
+            "title": "Item Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Text",
+            "type": "string"
+          },
+          "completed": {
+            "title": "Completed",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "task_id",
+          "item_id",
+          "text",
+          "completed"
+        ],
+        "title": "update_checklist_itemArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "update_checklist_itemDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "update_tag",
+      "backend": "habitica",
+      "description": "重命名已有标签。",
+      "inputSchema": {
+        "properties": {
+          "tag_id": {
+            "format": "uuid",
+            "title": "Tag Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 5000,
+            "minLength": 1,
+            "pattern": "\\S",
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tag_id",
+          "name"
+        ],
+        "title": "update_tagArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "update_tagDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "update_task",
+      "backend": "habitica",
+      "description": "局部修改任务；只发送指定字段。打卡应调用 score_task。\n\nArgs:\n    task_id: 任务 UUID 或别名。\n    changes: 要修改的字段；notes=\"\" 清空备注，tags=[] 清空标签，date=null 清空截止日期。\n        类型相关字段必须匹配已有任务类型，由 Habitica 检查。\n",
+      "inputSchema": {
+        "$defs": {
+          "Difficulty": {
+            "enum": [
+              0.1,
+              1.0,
+              1.5,
+              2.0
+            ],
+            "title": "Difficulty",
+            "type": "number"
+          },
+          "TaskUpdate": {
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "anyOf": [
+                  {
+                    "maxLength": 5000,
+                    "minLength": 1,
+                    "pattern": "\\S",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Text"
+              },
+              "notes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Notes"
+              },
+              "priority": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Difficulty"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "tags": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tags"
+              },
+              "attribute": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "str",
+                      "int",
+                      "per",
+                      "con"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Attribute"
+              },
+              "alias": {
+                "anyOf": [
+                  {
+                    "minLength": 1,
+                    "pattern": "^[A-Za-z0-9_-]+$",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Alias"
+              },
+              "date": {
+                "anyOf": [
+                  {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Date"
+              },
+              "frequency": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "daily",
+                      "weekly",
+                      "monthly",
+                      "yearly"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Frequency"
+              },
+              "everyX": {
+                "anyOf": [
+                  {
+                    "maximum": 9999,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Everyx"
+              },
+              "repeat": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {
+                      "type": "boolean"
+                    },
+                    "propertyNames": {
+                      "enum": [
+                        "su",
+                        "m",
+                        "t",
+                        "w",
+                        "th",
+                        "f",
+                        "s"
+                      ]
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Repeat"
+              },
+              "startDate": {
+                "anyOf": [
+                  {
+                    "format": "date",
+                    "type": "string"
+                  },
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Startdate"
+              },
+              "daysOfMonth": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "maximum": 31,
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Daysofmonth"
+              },
+              "weeksOfMonth": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "integer"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Weeksofmonth"
+              },
+              "up": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Up"
+              },
+              "down": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Down"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "minimum": 0,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Value"
+              },
+              "collapseChecklist": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Collapsechecklist"
+              }
+            },
+            "title": "TaskUpdate",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "changes": {
+            "$ref": "#/$defs/TaskUpdate"
+          }
+        },
+        "required": [
+          "task_id",
+          "changes"
+        ],
+        "title": "update_taskArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "update_taskDictOutput",
+        "type": "object"
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true
+      }
+    },
+    {
+      "name": "vision_health",
+      "backend": "vision",
+      "description": "报告当前默认后端的配置状态（不发请求）。",
+      "inputSchema": {
+        "properties": {},
+        "title": "vision_healthArguments",
+        "type": "object"
+      },
+      "outputSchema": {
+        "properties": {
+          "result": {
+            "title": "Result",
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "title": "vision_healthOutput",
+        "type": "object"
+      }
+    }
+  ]
+}
