@@ -96,17 +96,25 @@ async def test_reap_skipped_when_active(tmp_path: Path) -> None:
     manager = make_manager(tmp_path, idle_timeout=0.2)
     session = manager.sessions["fake"]
 
+    # holder 必须活跃到检查循环结束（固定次数调用约 0.9s 就会跑完，
+    # 而检查循环 1.2s，后半段会话合法空闲导致 reap=True 的假失败）
+    done = asyncio.Event()
+
     async def hold_call() -> None:
-        # add 很快；改为连续调用维持活跃，验证 reap 不误杀
-        for i in range(5):
+        i = 0
+        while not done.is_set():
             await manager.call("add", {"a": i, "b": 1})
-            await asyncio.sleep(0.1)
+            i += 1
+            await asyncio.sleep(0.05)
 
     holder = asyncio.create_task(hold_call())
-    for _ in range(6):
-        await asyncio.sleep(0.2)
-        assert await session.reap_if_idle() is False
-    await holder
+    try:
+        for _ in range(6):
+            await asyncio.sleep(0.2)
+            assert await session.reap_if_idle() is False
+    finally:
+        done.set()
+        await holder
     assert session.running
 
 
