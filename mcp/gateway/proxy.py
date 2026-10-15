@@ -51,6 +51,11 @@ _GRACE_EXIT_SECONDS = 5.0
 _EARLY_DEATH_WINDOW = 10.0
 _MAX_COOLDOWN = 60.0
 
+# pythonw 网关自身无控制台：spawn 控制台子进程若不带 CREATE_NO_WINDOW，
+# Windows 会为子进程新建可见终端窗口（默认终端应用为 Windows Terminal 时
+# 会真的弹出一个终端窗口，GUI 父进程 + 控制台子进程的默认行为）
+_CREATION_FLAGS = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+
 
 class UnknownTool(Exception):
     """网关清单里不存在该工具。"""
@@ -67,6 +72,7 @@ def _kill_tree(pid: int) -> None:
             ["taskkill", "/PID", str(pid), "/T", "/F"],
             capture_output=True,
             check=False,
+            creationflags=_CREATION_FLAGS,
         )
         return
     try:  # pragma: no cover - 本网关只在 Windows 部署
@@ -301,6 +307,7 @@ class BackendSession:
                 stderr=subprocess.PIPE,
                 cwd=str(self._spec.server_dir),
                 env=env,
+                creationflags=_CREATION_FLAGS,
             )
             self._process = process
             self.last_pid = process.pid

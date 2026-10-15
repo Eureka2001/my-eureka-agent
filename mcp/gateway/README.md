@@ -75,6 +75,10 @@ uv run scripts/dump_manifest.py --only fetch,ocr
 - **释放内存的唯一单位是子进程**：回收 = 关 stdin（EOF）→ 等退出 →
   `taskkill /T /F` 杀整棵树。Windows 下 venv python 是 trampoline，只杀
   直接子进程会留孤儿 base 解释器。
+- **所有子进程必须带 `CREATE_NO_WINDOW`**（`_CREATION_FLAGS`）：网关跑在
+  pythonw 下没有控制台，无标志地 spawn 控制台子进程（后端 exe、taskkill）
+  时 Windows 会为其新建可见终端窗口——默认终端应用为 Windows Terminal 时
+  用户桌面会真的弹出一个终端。
 - **anyio cancel scope 只能由进入它的 task 退出**：每个后端由常驻
   `_supervisor` 任务独占进程/转发任务/ClientSession 生命周期，调用方只发
   停止信号；不要从调用任务里退出这些资源。
