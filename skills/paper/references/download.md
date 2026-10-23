@@ -1,13 +1,13 @@
-# 论文下载（分册）
+# 论文下载
 
 为论文清单拿到文件（PDF 为默认交付物，HTML 与 TeX 源码按需），并把结果落成论文文件夹与库索引。库位置、文件夹命名、索引结构见 SKILL.md 共享约定。
 
 ## 策略基调
 
-目标是把论文拿到手，渠道不分贵贱，如实记录来源即可。实操按"命中率高、curl 友好"排序尝试：
+目标是把论文拿到手，如实记录来源即可。实操按"命中率高、curl 友好"排序尝试：
 
 1. **开放存档首选**：CVF（CVPR/ICCV）、ECVA（ECCV）、NeurIPS proceedings、PMLR（ICML）对 curl 友好，通常一步到位。
-2. **arXiv 几乎同等正式**：直接用，文件名与索引里不做任何特殊标注，只是明确标注来源是 ArXiv，PDF 情况下优先要官方的，但是 Html 或者 TeX Source 情况下优先要 ArXiv 的
+2. **arXiv 几乎同等正式**：直接用，文件名与索引里不做特殊标注，来源如实标注 arXiv；分格式偏好：PDF 优先官方渠道（开放存档），HTML 与 TeX 源码优先 arXiv。
 3. **止损默认**：付费墙（IEEE Xplore、ACM DL）与全面反爬（OpenReview）不硬刚，停在记录来源页 URL 并注明原因；用户明确说"尽一切努力 / 想办法搞到 PDF"才升级尝试其他途径。
 4. 作者方公开挂出的 PDF（实验室官网、作者主页，如 vipl.ict.ac.cn）与会议官方版同等可用，下载并记录来源 URL。
 5. 开放存档尚未收录（如 ICML 当年卷未上 PMLR）：记录 OpenReview / 会议官网 URL，注明"官方卷未上线"。
@@ -44,9 +44,9 @@
 
 ### 4. HTML 与 TeX 源码（按需）
 
-PDF 是默认交付物；HTML 与 TeX 源码在两种情况下获取：用户点名要，或本篇之后要转 Markdown 且公式/表格复杂——TeX 源码转录的忠实度远高于 PDF 文本层（见 to-markdown 分册）。来源基本只有 arXiv 系（见速查表 arXiv 行），HTML 优先原生 `arxiv.org/html`，旧论文用 ar5iv 兜底。
+PDF 是默认交付物；HTML 与 TeX 源码在两种情况下获取：用户点名要，或**本篇来自 arXiv 系且之后要整理成 Markdown**——此时一律在下载阶段顺手拿到（整理走 TeX/HTML 机械转换路径，成本远低于 PDF 文本层，见 to-markdown 分册来源路由），不需要等整理时发现公式复杂再回头补。非 arXiv 系论文不为此额外找源码，整理时走 PDF-only 路径。来源基本只有 arXiv 系（见速查表 arXiv 行），HTML 优先原生 `arxiv.org/html`，旧论文用 ar5iv 兜底。
 
-落盘到论文文件夹：`<文件夹名>.html`；`<文件夹名>-src.tar.gz`。tarball 不默认解压，转换阶段需要时再解压到 `tex/`。拿到的格式同样记入索引"本地文件"列（多值并列）。
+落盘到论文文件夹：`<文件夹名>.html`；`<文件夹名>-src.tar.gz`。tarball 不默认解压，整理阶段需要时再解压到 `tex/`。拿到的格式同样记入索引"本地文件"列（多值并列）。
 
 ### 5. 下载与验证（每个文件必做）
 
@@ -58,6 +58,7 @@ curl -sI -A "Mozilla/5.0" "<PDF直链>" | grep -i content-length   # 与本地�
 ```
 
 - **绝不能把 HTML 存成 .pdf**：渠道被拦截时返回的 HTML 报错页只有 ~12KB，`<title>Error 403 | OpenReview</title>` 一查便知。发现就删除该文件，改记 URL。
+- 非 PDF 格式同样验真：HTML 确认 `<title>` 或正文含论文标题、而非报错/登录页；TeX tarball 用 `tar -tzf` 能列出内容，排除空文件或报错页。
 - 下载源 URL 必须留痕：subagent 报告里要有，否则事后无法写进索引。
 
 ### 6. 落盘与索引
