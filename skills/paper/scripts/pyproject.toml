@@ -1,0 +1,16 @@
+[project]
+name = "extract-pdf"
+version = "0.1.0"
+description = "论文 PDF 确定性提取工具（skills/paper）：to_markdown 内核 + 章节切分编排"
+requires-python = ">=3.11"
+dependencies = ["pymupdf>=2.0"]
+
+[project.scripts]
+extract-pdf = "extract_pdf:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["extract_pdf"]

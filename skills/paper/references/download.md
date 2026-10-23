@@ -16,16 +16,16 @@
 
 ## 工作流程
 
-### 1. 提取论文清单
+### 1. 整理论文清单
 
-- docx 提正文和参考文献：`pandoc -f docx -t plain 文件.docx -o out.txt`（python-docx 为备用）。
-- 从参考文献编号 [N] 建任务表：编号 | 标题 | 出处 | 作者。正文中出现但参考文献缺标题的（如"TrajRAG"），回正文找全标题。
+- 常见输入是标题、URL 或直接给出的论文清单，逐一登记即可。
+- 仅当用户给的是 docx/pdf 等文档（如从申报书里批量下参考文献）才需要先提取清单：`pandoc -f docx -t plain 文件.docx -o out.txt`（python-docx 为备用），从参考文献编号 [N] 建任务表：编号 | 标题 | 出处 | 作者。正文中出现但参考文献缺标题的（如"TrajRAG"），回正文找全标题。
 - 识别非论文条目（竞赛获奖、数据集、软件）并跳过；重复引用去重（常见如 [7]=[23]、[11]=[19] 同文两编号），编号沿用首次出现。
-- 顺带确定每篇的文件夹名 `<会议><年份>_<短名>_<作者缩写>`（如 `ICCV2021_HOZ_Zhang`），全批次统一，便于追溯。
+- 顺带确定每篇的文件夹名 `<会议><年份>_<短名>_<一作姓氏>`（如 `ICCV2021_HOZ_Zhang`），全批次统一，便于追溯。一作姓氏：外文作者用原姓（Smith），中文作者用拼音姓（Zhang、Wang、Li）；不取名的首字母缩写。
 
 ### 2. 并行派发（清单 ≥ 5 篇时）
 
-- 用 general-purpose subagent，**每批 5–6 篇**。提示词必须自包含：环境（Windows/Git Bash）、库目录、每篇的精确文件夹名、下载与验证命令、渠道尝试顺序、"最后一条消息必须给结构化报告（编号|标题|来源页URL|PDF直链|本地文件|大小|状态）"、"URL 必须实际验证，不得编造"。
+- 用 general-purpose subagent，**每批 5–6 篇**。提示词必须自包含：环境（Windows/Git Bash）、库目录、每篇的精确文件夹名、下载与验证命令、渠道尝试顺序、"最后一条消息必须给结构化报告（标题|来源页URL|本地文件|下载内容|大小）"、"URL 必须实际验证，不得编造"。
 - 明确禁止 subagent 用浏览器自动化，只用 WebSearch/WebFetch/curl。
 - **subagent 可能被中途取消**：失败/取消后先 `ls` 库目录看已落地的文件夹再决定重派范围，别全量重跑；被取消的 agent 可能已完成一半但没留 URL——文件有效就保留，来源页 URL 可事后补查（搜 `标题 + 渠道域名`）再补进索引。
 
@@ -44,18 +44,20 @@
 
 ### 4. HTML 与 TeX 源码（按需）
 
-PDF 是默认交付物；HTML 与 TeX 源码在两种情况下获取：用户点名要，或**本篇来自 arXiv 系且之后要整理成 Markdown**——此时一律在下载阶段顺手拿到（整理走 TeX/HTML 机械转换路径，成本远低于 PDF 文本层，见 to-markdown 分册来源路由），不需要等整理时发现公式复杂再回头补。非 arXiv 系论文不为此额外找源码，整理时走 PDF-only 路径。来源基本只有 arXiv 系（见速查表 arXiv 行），HTML 优先原生 `arxiv.org/html`，旧论文用 ar5iv 兜底。
+PDF 是默认交付物；HTML 与 TeX 源码在两种情况下获取：用户点名要，或**本篇来自 arXiv 系且之后要提取/整理**——此时一律在下载阶段顺手拿到（TeX 源码本身就是良好的纯文本源，解压即交付，详见 to-source 子手册），不需要等提取时发现公式复杂再回头补。非 arXiv 系论文不为此额外找源码，提取时走 PDF-only 路径。来源基本只有 arXiv 系（见速查表 arXiv 行），HTML 优先原生 `arxiv.org/html`，旧论文用 ar5iv 兜底。
 
-落盘到论文文件夹：`<文件夹名>.html`；`<文件夹名>-src.tar.gz`。tarball 不默认解压，整理阶段需要时再解压到 `tex/`。拿到的格式同样记入索引"本地文件"列（多值并列）。
+落盘到论文文件夹：`<论文全名>.html`；`<论文全名>-src.tar.gz`。tarball 不默认解压，提取阶段解压到 `tex-source/`。拿到的格式同样记入索引"下载内容"列（多值并列）。
 
 ### 5. 下载与验证（每个文件必做）
 
 ```bash
-curl -sL -A "Mozilla/5.0" -o "ICCV2021_HOZ_Zhang/ICCV2021_HOZ_Zhang.pdf" "<PDF直链>"
-head -c 5 "ICCV2021_HOZ_Zhang/ICCV2021_HOZ_Zhang.pdf"   # 必须输出 %PDF-
+curl -sL -A "Mozilla/5.0" -o "ICCV2021_HOZ_Zhang/Hierarchical_Object-to-Zone_Graph_for_Object_Navigation.pdf" "<PDF直链>"
+head -c 5 "ICCV2021_HOZ_Zhang/Hierarchical_Object-to-Zone_Graph_for_Object_Navigation.pdf"   # 必须输出 %PDF-
 ls -la                                                   # 必须 > 100KB
 curl -sI -A "Mozilla/5.0" "<PDF直链>" | grep -i content-length   # 与本地字节数对账，确认来源
 ```
+
+源文件以论文全名命名（空格用 `_` 替代，标点保留或去掉以可读为准），如 `Hierarchical_Object-to-Zone_Graph_for_Object_Navigation.pdf`；后续 HTML、TeX 源码跟随同一主名。
 
 - **绝不能把 HTML 存成 .pdf**：渠道被拦截时返回的 HTML 报错页只有 ~12KB，`<title>Error 403 | OpenReview</title>` 一查便知。发现就删除该文件，改记 URL。
 - 非 PDF 格式同样验真：HTML 确认 `<title>` 或正文含论文标题、而非报错/登录页；TeX tarball 用 `tar -tzf` 能列出内容，排除空文件或报错页。
@@ -63,13 +65,12 @@ curl -sI -A "Mozilla/5.0" "<PDF直链>" | grep -i content-length   # 与本地�
 
 ### 6. 落盘与索引
 
-- **下载即入库**：每篇成功的论文直接落成论文文件夹（源 PDF 与文件夹同名），不设平铺中转、不再搬家。
-- 仅记 URL 的论文不建文件夹，信息只进索引行（本地文件列 `—`）。
-- 库索引表头上方给统计行：共几篇、下载几篇、仅记 URL 几篇及原因分布。CVF 有补充材料的（`/supplemental/` 路径）把链接附在来源页列。示例行：
+- **下载即入库**：每篇成功的论文直接落成论文文件夹，源 PDF 以论文全名命名（空格用 `_`），不设平铺中转、不再搬家。
+- 仅记 URL 的论文不建文件夹，信息只进索引行（下载内容列为空）。CVF 有补充材料的（`/supplemental/` 路径）把链接附在来源页列。索引表列结构见 SKILL.md 共享约定，示例行：
 
 ```markdown
-| 1 | HOZ: ... | ICCV 2021 | https://openaccess...html | https://openaccess...pdf | `ICCV2021_HOZ_Zhang/ICCV2021_HOZ_Zhang.pdf` | 已下载（CVF） | 未开始 | — |
-| 2 | ... | TIP 2024 | https://ieeexplore.../ | — | — | 仅记 URL（付费墙） | — | — |
+| ICCV2021_HOZ_Zhang | https://openaccess...html | `ICCV2021_HOZ_Zhang/` | CVF PDF | 未开始 | 未阅读 |
+| ... | https://ieeexplore.../ | — | — | — | — |
 ```
 
 ### 7. 汇报

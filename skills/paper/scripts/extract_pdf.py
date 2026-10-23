@@ -1,179 +1,173 @@
-# /// script
-# requires-python = ">=3.11"
-# dependencies = ["pymupdf>=1.24"]
-# ///
 """论文 PDF 确定性提取工具（skills/paper 的固定脚本）。
 
-skill 文档里的"归栏拼装、页眉页脚去除、断词修复、页码标记"全部由本脚本完成，
-模型不临场编写提取代码，只消费脚本输出做章节映射、校对与拼装。
+依赖声明在本目录 pyproject.toml（`uv sync` 建 .venv）；通过
+`uv run --project <本目录> extract-pdf ...` 或 console-script 调用。
 
-用法（本仓库根目录或任意位置均可，uv 自动解析依赖）：
-    uv run skills/paper/scripts/extract_pdf.py extract <pdf>            # 正文提取
-    uv run skills/paper/scripts/extract_pdf.py outline <pdf>            # 章节候选行（字号启发式）
-    uv run skills/paper/scripts/extract_pdf.py refs <pdf>               # 参考文献切分初稿
+正文提取内核是 PyMuPDF 2.0 的 ``Document.to_markdown()``（布局感知：双栏阅读
+顺序、标题层级、表格、斜体/加粗均由它处理）；本脚本只做编排——多文件批量、
+按章节切分、参考文献切分、落盘路径。模型不临场编写提取代码。
 
-extract 输出（stdout，markdown）：
-    - 每个物理页以 `<!-- pdf-page: N -->` 起始（从 1 起）；
-    - 双栏按"左栏先右栏后"归栏（依据 block 的 x 坐标与页宽中点）；
-    - 去除页眉页脚（页面上/下边缘的短孤立行、纯页码行）；
-    - 修复跨行断词（行尾连字符）与多余换行；跨页段落衔接为同一段；
-    - 页码信息保留在页标记注释里，供整理阶段按章节汇总，不逐段打印。
+用法：
+    uv run skills/paper/scripts/extract_pdf.py extract <pdf>... [--write]
+    uv run skills/paper/scripts/extract_pdf.py split <pdf>...
+    uv run skills/paper/scripts/extract_pdf.py outline <pdf>...
+    uv run skills/paper/scripts/extract_pdf.py refs <pdf>...
 
-outline 输出：字号显著大于正文的独立短行，作为章节标题候选，供人工确认映射。
+子命令说明：
+    extract  输出整篇 markdown；--write 时写到 <PDF 所在目录>/markdown-source/paper.md
+    split    按编号章节标题切成多个子 MD，写到 <PDF 所在目录>/markdown-source/
+    outline  列出识别到的全部标题行
+    refs     定位 References 后按 [N] 条目切分的初稿
 
-refs 输出：定位 References/Bibliography 起始页后按编号条目 [N] 切分的逐条列表。
+所有子命令都接受多个 PDF；单文件失败不中断批次（错误进 stderr，退出码 1）。
 """
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
+from pathlib import Path
+from typing import Protocol
 
 import pymupdf
 
-# 页眉页脚判定：距页边上/下 6% 以内、且长度不超过 90 字符的行
-_EDGE_RATIO = 0.06
-_MAX_EDGE_CHARS = 90
-# 双栏分界容差：block 中点偏离页宽中点在此比例内视为可能跨栏，保守按单栏处理
-_COLUMN_TOL = 0.08
+FRONT_MATTER_NAME = "front-matter"
+SLUG_MAX_LEN = 40
+# 判定参考文献为 markdown 表格所需的表格行数下限
+MIN_TABLE_ROWS = 3
+NEXT_FILE_MARKER = "\n<!-- ======== next file ======== -->\n"
+# to_markdown 的标题行形如 `## **1. Introduction** `（加粗装饰与尾随空格都可能出现）
+HEADING_RE = re.compile(
+    r"^(?P<level>#{1,6})\s+\**\s*(?P<text>\d+\.?\d*\.?\s+\S.*?)\**\s*$"
+)
+# 只按一级编号章节（`1.`、`2.`）切分，`3.1` 一类子节留在所属章节内
+TOP_LEVEL_SECTION_RE = re.compile(r"^\d+\.?\s+\S")
+REFERENCES_HEADING_RE = re.compile(
+    r"^#{1,6}\s+(References|Bibliography|REFERENCES)\b.*$", re.MULTILINE
+)
 
 
-def _is_edge_line(text: str, y0: float, y1: float, page_h: float) -> bool:
-    stripped = text.strip()
-    if not stripped:
-        return True
-    if y1 < page_h * _EDGE_RATIO or y0 > page_h * (1 - _EDGE_RATIO):
-        return len(stripped) <= _MAX_EDGE_CHARS
-    if re.fullmatch(r"\d{1,4}", stripped):  # 装饰页码可能在边缘带以内
-        return y1 < page_h * 0.12 or y0 > page_h * 0.88
-    return False
+class PdfHandler(Protocol):
+    """子命令处理器：处理单个 PDF，write 来自 --write 选项。"""
+
+    def __call__(self, pdf_path: Path, *, write: bool) -> None: ...
 
 
-def _page_blocks(
-    page: pymupdf.Page,
-) -> list[tuple[tuple[float, float, float, float], str]]:
-    """返回过滤页眉页脚后的 (bbox, 文本) block 列表，双栏页按左栏先排序。"""
-    blocks = [
-        (b[:4], text)
-        for b, text in (
-            (blk[:4], blk[4].strip())
-            for blk in page.get_text("blocks")  # type: ignore[index]
-        )
-        if text and not _is_edge_line(text, b[1], b[3], page.rect.height)
-    ]
-    if not blocks:
-        return []
-    mid = page.rect.width / 2
-    # 双栏判定：多数 block 明确落在中线一侧才算双栏
-    left = [b for b in blocks if b[0][2] < mid]
-    right = [b for b in blocks if b[0][0] > mid]
-    spanning = [b for b in blocks if b not in left and b not in right]
-    if len(blocks) >= 4 and len(left) >= 2 and len(right) >= 2:
-        # 左栏 → 右栏 → 跨栏块，各按纵坐标排；跨栏块（图表题等）放最后由模型辨认
-        def y(b: tuple[tuple[float, float, float, float], str]) -> float:
-            return b[0][1]
-
-        return [*sorted(left, key=y), *sorted(right, key=y), *sorted(spanning, key=y)]
-    return sorted(blocks, key=lambda b: (b[0][1], b[0][0]))
+def to_markdown(pdf_path: Path) -> str:
+    """提取单个 PDF 为 markdown；文件缺失/损坏时由 pymupdf 抛异常，调用方记账。"""
+    return pymupdf.open(pdf_path).to_markdown()
 
 
-def _clean_text(raw: str) -> str:
-    """块内文本清理：去软换行、修复断词、压缩空白。"""
-    text = raw.replace("-\n", "")  # 跨行断词
-    text = text.replace("\n", " ")
-    return re.sub(r"[ \t]+", " ", text).strip()
+def heading_slug(title: str) -> str:
+    """章节标题转文件名安全的短 slug（去章节号、压缩分隔符、限长）。"""
+    text = re.sub(r"^\d+\.?\d*\.?\s*", "", title)
+    slug = re.sub(r"[^\w\-]+", "-", text).strip("-").lower()
+    return slug[:SLUG_MAX_LEN].rstrip("-") or "section"
 
 
-def cmd_extract(pdf_path: str) -> None:
-    doc = pymupdf.open(pdf_path)
-    out: list[str] = [f"<!-- source: {pdf_path}; pdf-pages: 1-{doc.page_count} -->", ""]
-    prev_tail = ""
-    for i, page in enumerate(doc, start=1):
-        page_lines: list[str] = [f"<!-- pdf-page: {i} -->"]
-        for bbox, text in _page_blocks(page):
-            clean = _clean_text(text)
-            if not clean:
-                continue
-            # 跨页段落衔接：上一页末块未以句号/问号/叹号收尾且本块以小写开头
-            if (
-                prev_tail
-                and not prev_tail.endswith((".", "?", "!", ":"))
-                and clean[:1].islower()
-            ):
-                page_lines[-1] = page_lines[-1] + " " + clean
-            else:
-                page_lines.append(clean)
-            prev_tail = clean[-40:]
-        prev_tail = prev_tail if page_lines[-1] != f"<!-- pdf-page: {i} -->" else ""
-        out.extend(page_lines)
-        out.append("")
-    print("\n".join(out).rstrip())
+def write_markdown(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    print(f"[written] {path}", file=sys.stderr)
 
 
-def cmd_outline(pdf_path: str) -> None:
-    doc = pymupdf.open(pdf_path)
-    sizes: dict[float, int] = {}
-    for page in doc:
-        for blk in page.get_text("dict")["blocks"]:  # type: ignore[index]
-            for line in blk.get("lines", []):
-                for span in line.get("spans", []):
-                    t = span["text"].strip()
-                    if t:
-                        sizes[round(span["size"], 1)] = sizes.get(
-                            round(span["size"], 1), 0
-                        ) + len(t)
-    if not sizes:
-        return
-    body_size = max(sizes, key=lambda s: sizes[s])  # 按字符量估计正文字号
-    print(f"正文字号估计: {body_size}pt")
-    for i, page in enumerate(doc, start=1):
-        for blk in page.get_text("dict")["blocks"]:  # type: ignore[index]
-            for line in blk.get("lines", []):
-                spans = [s for s in line.get("spans", []) if s["text"].strip()]
-                if not spans:
-                    continue
-                text = "".join(s["text"] for s in spans).strip()
-                size = max(s["size"] for s in spans)
-                numbered = re.match(r"^(\d+\.?\d*\.?\s+|[A-Z]\d*\s+)", text)
-                if (
-                    size > body_size + 1.5
-                    and len(text) < 90
-                    and (numbered or size > body_size + 3)
-                ):
-                    print(f"p{i}\t{size:.1f}pt\t{text}")
+def cmd_extract(pdf_path: Path, *, write: bool = False) -> None:
+    content = to_markdown(pdf_path)
+    if write:
+        write_markdown(pdf_path.parent / "markdown-source" / "paper.md", content)
+    else:
+        print(content, end="")
 
 
-def cmd_refs(pdf_path: str) -> None:
-    doc = pymupdf.open(pdf_path)
-    text = "\n".join(
-        _clean_text(t)
-        for page in doc
-        for _, t in _page_blocks(page)
-        if t.strip() and not _is_edge_line(t, 0, page.rect.height, page.rect.height)
-    )
-    m = re.search(r"\b(References|Bibliography|REFERENCES)\b", text)
-    if not m:
-        print("未定位到 References 小节", file=sys.stderr)
-        sys.exit(1)
-    tail = text[m.end() :]
-    entries = re.split(r"(?=\[\d+\]\s)", tail)
-    for entry in entries:
-        entry = entry.strip()
-        if not entry:
+def cmd_split(pdf_path: Path, *, write: bool = False) -> None:
+    """按编号章节标题边界切分，每章一个文件，写到 markdown-source/ 下。"""
+    sections: list[tuple[str, list[str]]] = [(FRONT_MATTER_NAME, [])]
+    for line in to_markdown(pdf_path).splitlines():
+        m = HEADING_RE.match(line)
+        if m and len(m["level"]) <= 2 and TOP_LEVEL_SECTION_RE.match(m["text"]):
+            sections.append((heading_slug(m["text"]), [line]))
+        elif re.match(r"^#{1,6}\s+\**\s*(References|Bibliography|REFERENCES)\b", line):
+            # 参考文献无章节编号，也作为独立切分边界
+            sections.append(("references", [line]))
+        else:
+            sections[-1][1].append(line)
+    out_dir = pdf_path.parent / "markdown-source"
+    written = 0
+    for index, (name, sec_lines) in enumerate(sections):
+        if not any(line.strip() for line in sec_lines):
             continue
-        if re.match(r"^\[\d+\]", entry):
-            print(entry + "\n")
-        elif entries.index(entry) == 0:
-            print("(References 标题与首个条目之间的内容:)", entry, "\n")
+        write_markdown(
+            out_dir / f"{index:02d}-{name}.md", "\n".join(sec_lines).rstrip() + "\n"
+        )
+        written += 1
+    print(f"[split] {pdf_path.name}: {written} 个章节文件 → {out_dir}", file=sys.stderr)
 
 
-def main(argv: list[str]) -> int:
-    if len(argv) != 3 or argv[1] not in {"extract", "outline", "refs"}:
-        print(__doc__, file=sys.stderr)
-        return 2
-    {"extract": cmd_extract, "outline": cmd_outline, "refs": cmd_refs}[argv[1]](argv[2])
-    return 0
+def cmd_outline(pdf_path: Path, *, write: bool = False) -> None:
+    for line in to_markdown(pdf_path).splitlines():
+        if line.startswith("#"):
+            print(line)
+
+
+def cmd_refs(pdf_path: Path, *, write: bool = False) -> None:
+    md = to_markdown(pdf_path)
+    m = REFERENCES_HEADING_RE.search(md)
+    if not m:
+        raise ValueError("未定位到 References 小节")
+    tail = md[m.end() :]
+    table_lines = [
+        line.strip() for line in tail.splitlines() if line.lstrip().startswith("|")
+    ]
+    # 表格形式的参考文献按行、正文形式按 [N] 前缀切分
+    if len(table_lines) > MIN_TABLE_ROWS:
+        entries: list[str] = table_lines
+    else:
+        entries = [
+            entry.strip().replace("\n", " ")
+            for entry in re.split(r"(?=\[\d+\]\s)", tail)
+            if entry.strip()
+        ]
+    for entry in entries:
+        print(entry, "\n")
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="论文 PDF 确定性提取工具")
+    sub = parser.add_subparsers(dest="command", required=True)
+
+    def register(name: str, help_text: str, handler: PdfHandler) -> None:
+        subparser = sub.add_parser(name, help=help_text)
+        subparser.add_argument("pdfs", nargs="+", type=Path, help="一个或多个 PDF 文件")
+        subparser.set_defaults(handler=handler, write=False)
+
+    register("extract", "整篇 markdown 提取", cmd_extract)
+    register("split", "按章节切成多个子 MD（写盘）", cmd_split)
+    register("outline", "列出识别到的标题行", cmd_outline)
+    register("refs", "参考文献切分初稿", cmd_refs)
+    # --write 只属于 extract：它改变的是输出目标（stdout → 落盘），其他子命令固定写盘
+    sub.choices["extract"].add_argument(  # type: ignore[index]
+        "-w",
+        "--write",
+        action="store_true",
+        help="写到 <PDF 所在目录>/markdown-source/paper.md",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    return_code = 0
+    for i, pdf_path in enumerate(args.pdfs):
+        if i and args.command != "split" and not args.write:
+            print(NEXT_FILE_MARKER)
+        try:
+            args.handler(pdf_path, write=args.write)
+        except Exception as exc:  # noqa: BLE001 单文件失败不中断批次，错误进 stderr 便于汇总
+            print(f"[失败] {pdf_path}: {exc}", file=sys.stderr)
+            return_code = 1
+    return return_code
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main())
