@@ -42,7 +42,8 @@ NEXT_FILE_MARKER = "\n<!-- ======== next file ======== -->\n"
 HEADING_RE = re.compile(r"^(?P<level>#{1,6})\s+(?P<body>.*?)\s*$")
 # 标题正文的编号前缀：阿拉伯多级（1 / 1. / 3.1）或罗马一级（I.）；编号与标题
 # 之间可隔加粗记号（中文期刊输出形如 `# **1** 相关背景`）
-SECTION_NUM_RE = re.compile(r"^\**(?P<num>\d+(?:\.\d+)*\.?|[IVXLC]+\.)(?=\**\s|\s|$)")
+NUM_PATTERN = r"\d+(?:\.\d+)*\.?|[IVXLC]+\."
+SECTION_NUM_RE = re.compile(rf"^\**(?P<num>{NUM_PATTERN})(?=\**\s|\s|$)")
 # 一级编号：`1`、`1.` 或 `I.`；`3.1` 一类子节不算
 TOP_LEVEL_NUM_RE = re.compile(r"^\d+\.?$|^[IVXLC]+\.$")
 REFERENCES_HEADING_RE = re.compile(
@@ -58,14 +59,15 @@ class PdfHandler(Protocol):
 
 def to_markdown(pdf_path: Path) -> str:
     """提取单个 PDF 为 markdown；文件缺失/损坏时由 pymupdf 抛异常，调用方记账。"""
-    # Document.to_markdown 是 pymupdf 2.0 运行时挂载的 API（内部转调
-    # pymupdf4llm.to_markdown(pdf_path)），静态类型不可见，故 ignore
-    return pymupdf.open(pdf_path).to_markdown()  # type: ignore[attr-defined]
+    with pymupdf.open(pdf_path) as doc:
+        # to_markdown 是 pymupdf 2.0 运行时挂载的 API（内部转调
+        # pymupdf4llm.to_markdown(pdf_path)），静态类型不可见，故 ignore
+        return doc.to_markdown()  # type: ignore[attr-defined]
 
 
 def heading_slug(title: str) -> str:
     """章节标题转文件名安全的短 slug（去编号前缀、压缩分隔符、限长）。"""
-    text = re.sub(r"^#{1,6}\s+\**\s*(?:\d+(?:\.\d+)*\.?|[IVXLC]+\.)\**\s*", "", title)
+    text = re.sub(rf"^#{{1,6}}\s+\**\s*(?:{NUM_PATTERN})\**\s*", "", title)
     slug = re.sub(r"[^\w\-]+", "-", text).strip("-").lower()
     return slug[:SLUG_MAX_LEN].rstrip("-") or "section"
 
@@ -77,6 +79,7 @@ def write_markdown(path: Path, content: str) -> None:
 
 
 def cmd_extract(pdf_path: Path, *, write: bool = False) -> None:
+    """提取整篇 markdown；--write 时落盘，否则写 stdout。"""
     content = to_markdown(pdf_path)
     if write:
         write_markdown(pdf_path.parent / "markdown-source" / "paper.md", content)
@@ -130,12 +133,14 @@ def cmd_split(pdf_path: Path, *, write: bool = False) -> None:
 
 
 def cmd_outline(pdf_path: Path, *, write: bool = False) -> None:
+    """列出识别到的全部标题行。"""
     for line in to_markdown(pdf_path).splitlines():
         if line.startswith("#"):
             print(line)
 
 
 def cmd_refs(pdf_path: Path, *, write: bool = False) -> None:
+    """切分参考文献条目写 stdout：表格形式按行，正文形式按 [N] 前缀。"""
     md = to_markdown(pdf_path)
     m = REFERENCES_HEADING_RE.search(md)
     if not m:
@@ -154,7 +159,7 @@ def cmd_refs(pdf_path: Path, *, write: bool = False) -> None:
             if entry.strip()
         ]
     for entry in entries:
-        print(entry, "\n")
+        print(entry, end="\n\n")
 
 
 def build_parser() -> argparse.ArgumentParser:
