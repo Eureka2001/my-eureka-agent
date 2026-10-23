@@ -36,6 +36,9 @@ argument-hint: <论文标题/文件/目录/URL>
 | CVPR2026_TrajRAG_Wang | <https://openaccess...html> | `CVPR2026_TrajRAG_Wang/` |  CVF PDF、arXiv HTML、arXiv TeX Source      | 未开始   | 初步阅读  |
 ```
 
+库级与篇级 `index.md` 均有模板可复制：`templates/index-library-template.md`、
+`templates/index-paper-template.md`（另含 `templates/report-template.md`）。
+
 - 下载如果失败，下载内容应该为空。
 - 状态一律用纯文字词，不用对勾、叉、旗帜类符号。
 - 篇级详情（元信息、章节页码映射、待核对位置）放各论文文件夹内的 `index.md`，与库索引并存、职责不同。

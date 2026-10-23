@@ -7,7 +7,7 @@
 - **源提取（默认）**：只做确定性转换，交付"文本源 + 报告 + 索引"。模型不做逐字整理。
   - 有 TeX 源码时**什么都不用做**：TeX 本身就是结构良好的纯文本（公式即 LaTeX、章节原生、引用带 bib），解压到 `tex-source/` 即为交付物，不做任何转 Markdown。
   - PDF-only 时跑一次 `scripts/extract_pdf.py split`（即 `extract-pdf split`，console-script 入口），按原文章节切分直接落盘 `markdown-source/`（一节一文件，标题层级、表格由 PyMuPDF `to_markdown()` 内核处理），模型不改动正文。需要整篇单文件时用 `extract --write` 落 `markdown-source/paper.md`。
-- **精细整理（按需升级）**：仅当用户明确要求（"整理成结构化 Markdown""按六文件拆分"等）才做，在源提取产物之上切分六文件。源提取产出的 `tex-source/`、`markdown-source/` 保留不动，精细整理产物与之并存。
+- **精细整理（按需升级）**：仅在用户明确要求（"精细化整理"、"按六文件重构"等）时做，以源提取产物（`markdown-source/` 章节文件或 `tex-source/`）为原料切分六文件。六文件直接落盘 `markdown-source/`，粗提取章节文件删除，只留精细结果；TeX 路径的 `tex-source/` 是源文件本身，照常保留。
 
 默认档做完就汇报；不要顺手进入精细整理。
 
@@ -40,13 +40,13 @@
 └── index.md                  # 篇级索引
 ```
 
-- `report.md`：从 `references/report-template.md` 复制起稿，填「基本信息」与「提取报告」两节：来源路由结论（走了哪条路径、为什么）、所用工具与日期、章节候选清单（`outline` 输出整理，含页码；TeX 路径则为主 tex 与章节结构概览）、已知问题与待核对事项（指向具体位置与 PDF 页码）。
-- `index.md`：元信息（标题、作者、年份、发表信息、标识符）、源文件名与 SHA-256、总页数（无 PDF 时注明）、文件导航、处理状态、待核对摘要。
+- `report.md`：从 `templates/report-template.md` 复制起稿，填「基本信息」与「提取报告」两节：来源路由结论（走了哪条路径、为什么）、所用工具与日期、章节候选清单（`outline` 输出整理，含页码；TeX 路径则为主 tex 与章节结构概览）、已知问题与待核对事项（指向具体位置与 PDF 页码）。
+- `index.md`（篇级）：从 `templates/index-paper-template.md` 复制起稿，填：元信息（标题、作者、年份、发表信息、标识符）、源文件名与 SHA-256、总页数（无 PDF 时注明）、章节到输出文件映射、文件导航、处理状态、待核对摘要。库根目录的库级 `index.md` 见 `templates/index-library-template.md`。
 - 扫描版 PDF（无文本层）例外：才用 OCR 加页面检查，并在 `report.md` 注明。
 
 ## 精细整理档（按需）的输出
 
-在默认档产物之上，于论文文件夹根创建以下文件。保留原论文的章节名称、编号和层级；文件分类不代替原始章节结构。
+在默认档产物之上进行整理，完成后 `markdown-source/` 只保留六文件结果，粗提取章节文件不保留（`tex-source/` 原样保留）。文件分类不代替原始章节结构。
 
 | 文件或目录 | 内容 |
 | --- | --- |
@@ -58,7 +58,7 @@
 | `appendices/` | 按原始附录结构或主题拆分的 Markdown；内容很少时可合为一个文件。仅有附录时创建。 |
 | `assets/` | 默认不创建、不提取图片；仅当用户明确要求提取图片时创建。 |
 
-- 切分的原料是 `tex-source/` 或 `markdown-source/`（章节文件或 `paper.md`），不是重新读 PDF。
+- 切分的原料是 `tex-source/` 或 `markdown-source/`（章节文件或 `paper.md`），不是重新读 PDF。PDF 路径切分完成后删除 `markdown-source/` 下的粗提取章节文件（含 `paper.md`），只留六文件结果；`tex-source/` 照常保留。
 - `references.md` 优先机械转录：TeX 有 `.bib` 或 `thebibliography` 的直接转录；PDF-only 用 `extract_pdf.py refs` 的切分初稿整理。模型只抽查编号与正文引用标识的对应关系。
 - 公式：TeX 路径直接引用源码；PDF-only 路径转为 Markdown 可显示的 LaTeX，拿不准的照录原文并标注待核对。
 - 表格完整转录：简单表格用 Markdown，复杂表格用 HTML；跨页表格合并为同一逻辑表，保留表头、数值、单位、脚注和加粗强调。
