@@ -9,7 +9,7 @@
 
 | 标题 | 来源页 URL | 本地文件 | 下载内容 | 整理状态 | 阅读状态 |
 | --- | --- | --- | --- | --- | --- |
-| CVPR2026_TrajRAG_Wang | https://openaccess.thecvf.com/... | `CVPR2026_TrajRAG_Wang/` | CVF PDF、arXiv HTML、arXiv TeX Source | 源提取已完成 | 初步阅读 |
+| CVPR2026_TrajRAG_Wang | https://openaccess.thecvf.com/... | `CVPR2026_TrajRAG_Wang/` | CVF PDF、arXiv HTML、arXiv TeX Source | 源提取已完成 | 定位阅读（已完成） |
 | ICCV2021_HOZ_Zhang | https://openaccess.thecvf.com/... | `ICCV2021_HOZ_Zhang/` | CVF PDF | 未开始 | 未阅读 |
 | <某篇付费墙论文> | https://ieeexplore.ieee.org/document/.../ | — | — | — | — |
 
@@ -20,4 +20,4 @@
 - **本地文件**：论文文件夹（含尾斜杠）；仅记 URL 未落盘的论文填 `—`。
 - **下载内容**：拿到的格式多值并列（如 "CVF PDF、arXiv TeX Source"）；下载失败留空。
 - **整理状态**：未开始 / 源提取已完成 / 精细整理已完成 / 部完成。
-- **阅读状态**：未阅读 / 初步阅读 / 精读已完成 / 部完成；末列可附一句话待核对摘要。
+- **阅读状态**：未阅读，或“定位阅读 / 专题阅读 / 全文精读”加“已完成 / 部分完成”，例如“专题阅读（已完成）：导航终点”。深度与完成情况分别记录，专题完成不表示全文已读；具体范围、证据及续读位置链接到篇级 `report.md`。已有“初步阅读”等状态可保留，但需补充范围，不推定全文覆盖。
