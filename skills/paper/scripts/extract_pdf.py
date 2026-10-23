@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import Protocol
 
@@ -38,11 +39,12 @@ SLUG_MAX_LEN = 40
 MIN_TABLE_ROWS = 3
 NEXT_FILE_MARKER = "\n<!-- ======== next file ======== -->\n"
 # to_markdown 的标题行形如 `## **1. Introduction** `（加粗装饰与尾随空格都可能出现）
-HEADING_RE = re.compile(
-    r"^(?P<level>#{1,6})\s+\**\s*(?P<text>\d+\.?\d*\.?\s+\S.*?)\**\s*$"
-)
-# 只按一级编号章节（`1.`、`2.`）切分，`3.1` 一类子节留在所属章节内
-TOP_LEVEL_SECTION_RE = re.compile(r"^\d+\.?\s+\S")
+HEADING_RE = re.compile(r"^(?P<level>#{1,6})\s+(?P<body>.*?)\s*$")
+# 标题正文的编号前缀：阿拉伯多级（1 / 1. / 3.1）或罗马一级（I.）；编号与标题
+# 之间可隔加粗记号（中文期刊输出形如 `# **1** 相关背景`）
+SECTION_NUM_RE = re.compile(r"^\**(?P<num>\d+(?:\.\d+)*\.?|[IVXLC]+\.)(?=\**\s|\s|$)")
+# 一级编号：`1`、`1.` 或 `I.`；`3.1` 一类子节不算
+TOP_LEVEL_NUM_RE = re.compile(r"^\d+\.?$|^[IVXLC]+\.$")
 REFERENCES_HEADING_RE = re.compile(
     r"^#{1,6}\s+(References|Bibliography|REFERENCES)\b.*$", re.MULTILINE
 )
@@ -56,12 +58,14 @@ class PdfHandler(Protocol):
 
 def to_markdown(pdf_path: Path) -> str:
     """提取单个 PDF 为 markdown；文件缺失/损坏时由 pymupdf 抛异常，调用方记账。"""
-    return pymupdf.open(pdf_path).to_markdown()
+    # Document.to_markdown 是 pymupdf 2.0 运行时挂载的 API（内部转调
+    # pymupdf4llm.to_markdown(pdf_path)），静态类型不可见，故 ignore
+    return pymupdf.open(pdf_path).to_markdown()  # type: ignore[attr-defined]
 
 
 def heading_slug(title: str) -> str:
-    """章节标题转文件名安全的短 slug（去章节号、压缩分隔符、限长）。"""
-    text = re.sub(r"^\d+\.?\d*\.?\s*", "", title)
+    """章节标题转文件名安全的短 slug（去编号前缀、压缩分隔符、限长）。"""
+    text = re.sub(r"^#{1,6}\s+\**\s*(?:\d+(?:\.\d+)*\.?|[IVXLC]+\.)\**\s*", "", title)
     slug = re.sub(r"[^\w\-]+", "-", text).strip("-").lower()
     return slug[:SLUG_MAX_LEN].rstrip("-") or "section"
 
@@ -80,13 +84,34 @@ def cmd_extract(pdf_path: Path, *, write: bool = False) -> None:
         print(content, end="")
 
 
+def top_level_boundaries(md: str) -> list[tuple[str, str]]:
+    """找出一级编号章节标题，返回 (slug, 原始行)。
+
+    各排版的标题层级不统一（有 h1 也有 h5），取命中最多的层级作为切分层，
+    只按一级编号（`1.` / `I.`）切分，`3.1` 一类子节留在所属章节内。
+    """
+    candidates: list[tuple[int, str, str]] = []
+    for line in md.splitlines():
+        m = HEADING_RE.match(line)
+        if not m:
+            continue
+        num = SECTION_NUM_RE.match(m["body"].strip())
+        if num and TOP_LEVEL_NUM_RE.match(num["num"]):
+            candidates.append((len(m["level"]), heading_slug(m["body"]), line))
+    if not candidates:
+        return []
+    level = Counter(c[0] for c in candidates).most_common(1)[0][0]
+    return [(slug, line) for lv, slug, line in candidates if lv == level]
+
+
 def cmd_split(pdf_path: Path, *, write: bool = False) -> None:
     """按编号章节标题边界切分，每章一个文件，写到 markdown-source/ 下。"""
+    md = to_markdown(pdf_path)
+    boundary_lines = {line for _, line in top_level_boundaries(md)}
     sections: list[tuple[str, list[str]]] = [(FRONT_MATTER_NAME, [])]
-    for line in to_markdown(pdf_path).splitlines():
-        m = HEADING_RE.match(line)
-        if m and len(m["level"]) <= 2 and TOP_LEVEL_SECTION_RE.match(m["text"]):
-            sections.append((heading_slug(m["text"]), [line]))
+    for line in md.splitlines():
+        if line in boundary_lines:
+            sections.append((heading_slug(line), [line]))
         elif re.match(r"^#{1,6}\s+\**\s*(References|Bibliography|REFERENCES)\b", line):
             # 参考文献无章节编号，也作为独立切分边界
             sections.append(("references", [line]))

@@ -1,15 +1,10 @@
 # AGENTS.md — my-eureka-agent
 
-个人 AI Agent 基础设施仓库：本地 MCP server、MCP 网关、ZCode skills 与插件清单。
-Windows 专用个人环境，不为跨平台/多用户引入抽象。
-
 ## 环境与工具链
 
-- 本机 Python 一律走 uv：`uv run` / `uv add` / `uv sync`，不找系统 Python。
-- 每个 MCP server 一个独立 uv 项目（`mcp/<name>/`），依赖互相隔离；网关自身也
-  是独立项目（`mcp/gateway/`），依赖仅 `mcp` SDK。
-- 质量门（新 server 对齐 `mcp/habitica` 的标准）：ruff（E4/E7/E9/F/B/I/UP，
-  88 列）+ mypy（`disallow_untyped_defs`）+ pytest，三者全绿才算完成。
+- Python 一律走 uv：`uv run` / `uv add` / `uv sync`，不找系统 Python。
+- 每个 MCP server 一个独立 uv 项目（`mcp/<name>/`），依赖互相隔离；网关自身也是独立项目（`mcp/gateway/`），依赖仅 `mcp` SDK。
+- 本项目下的 `skills`，被用户目录的 `~\.agents\skills` 引用
 
 ## MCP 架构（改代码前必读）
 
