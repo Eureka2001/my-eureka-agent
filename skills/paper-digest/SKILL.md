@@ -1,11 +1,11 @@
 ---
-name: paper
-description: 学术论文全流程：获取论文 PDF、HTML 与 TeX 源码，提取或整理可读文本，建立论文库，并按方法论文或综述论文分别阅读分析，形成可追溯、可续读的 report.md。适用于下载文献、论文转 Markdown/提取文本、整理文献库、读论文/精读/分析论文（analyze paper / read paper）、理解给定论文或批量处理文献，以及获取 CVPR、NeurIPS、ICML 等指定版本。arXiv 系优先获取 TeX 源码，默认提取不做结构重排；仅需摘要或翻译时不用。
+name: paper-digest
+description: 学术论文获取、分析流程：获取论文文件，提取或整理可读文本，进行阅读分析。适用于下载文献、提取文本、整理文献库、读论文/精读/分析论文、理解给定论文或批量处理文献。关于如何下载、整理，而不是写作。
 user-invocable: true
 argument-hint: <论文标题/文件/目录/URL>
 ---
 
-# 论文（paper）
+# 论文（paper-digest）
 
 论文全流程库：下载获取、整理为结构化文本（Markdown 等）、精读分析，全部产物沉淀进同一个论文库，以一份库索引贯穿状态。
 
