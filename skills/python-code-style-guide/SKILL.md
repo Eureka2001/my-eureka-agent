@@ -8,6 +8,10 @@ agent_created: true
 
 按照本目录中的规范，对 Python 代码执行审查、风格化、重构或生成。将本文件作为执行入口，将 [README.md](README.md) 作为规范总索引；不要在本文件中重复维护具体代码规则。
 
+## 哲学
+
+AI 永远需要生产的是 Human-readable（代码具有清晰命名、模块结构、显式逻辑和可以追踪的依赖）和 Human-understandable（人类有能力在合理成本下理解某个模块的设计与行为）的代码。
+
 ## 读取顺序
 
 1. 读取 [README.md](README.md)，确认规范定位、适用范围和章节结构。
