@@ -5,7 +5,7 @@
 ## 两档交付（核心约定）
 
 - **源提取（默认）**：只做确定性转换，交付"文本源 + 报告 + 索引"。模型不做逐字整理。
-  - 有 TeX 源码时**什么都不用做**：TeX 本身就是结构良好的纯文本（公式即 LaTeX、章节原生、引用带 bib），解压到 `tex-source/` 即为交付物，不做任何转 Markdown。
+  - 有 TeX 源码时**什么都不用做**：TeX 本身就是结构良好的纯文本（公式即 LaTeX、章节原生、引用带 bib），解压到 `tex-source/` 即为交付物，不做任何转 Markdown；解压验证成功（`tar -tzf` 可列出内容、主 tex 辨认完成）后删除 tar 包，`tex-source/` 自此即为源文件。
   - PDF-only 时跑一次 `scripts/extract_pdf.py split`（即 `extract-pdf split`，console-script 入口），按原文章节切分直接落盘 `markdown-source/`（一节一文件，标题层级、表格由 PyMuPDF `to_markdown()` 内核处理），模型不改动正文。需要整篇单文件时用 `extract --write` 落 `markdown-source/paper.md`。
 - **精细整理（按需升级）**：仅在用户明确要求（"精细化整理"、"按六文件重构"等）时做，以源提取产物（`markdown-source/` 章节文件或 `tex-source/`）为原料切分六文件。六文件直接落盘 `markdown-source/`，粗提取章节文件删除，只留精细结果；TeX 路径的 `tex-source/` 是源文件本身，照常保留。
 
@@ -22,7 +22,7 @@
 
 按来源决定路径，模型参与度差一个量级：
 
-- **TeX/HTML 路径（arXiv 系论文的默认路径）**：论文有 TeX 源码（`<论文全名>-src.tar.gz`）或 HTML（`<论文全名>.html`）就走这条。源提取档只需解压/落盘交付；精细整理档也以机械转换为主（pandoc 或脚本处理 HTML/tex），模型只做章节映射确认、六文件拼装和校对。**开工时发现 arXiv 系论文缺 TeX/HTML 的，先回 download 子手册补下载，不要直接用 PDF 文本层硬啃公式。**多文件源码包先辨认主 tex（通常含 `\documentclass`，或与论文同名），辨认结果写进 `report.md`。
+- **TeX/HTML 路径（arXiv 系论文的默认路径）**：论文有 TeX 源码（`<论文全名>-src.tar.gz`，按下载约定 arXiv 系下载阶段已优先拿到；解压后 tar 包即删）或 HTML（`<论文全名>.html`）就走这条。源提取档只需解压/落盘交付；精细整理档也以机械转换为主（pandoc 或脚本处理 HTML/tex），模型只做章节映射确认、六文件拼装和校对。**开工时发现 arXiv 系论文缺 TeX/HTML 的，先回 download 子手册补下载，不要直接用 PDF 文本层硬啃公式。**多文件源码包先辨认主 tex（通常含 `\documentclass`，或与论文同名），辨认结果写进 `report.md`。
 - **PDF-only 路径（CVF 老论文、IEEE 等无源码来源）**：默认 `extract-pdf split` 按章节切分落盘 `markdown-source/`（切分边界是标题识别初稿，识别不准的章节人工合并/改名即可，不要为此渲染页面）；`outline` 拿标题清单核对，`refs` 拿参考文献切分，`extract --write` 出整篇单文件。公式从 PDF 文本层重建只发生在这条路径上，且只在精细整理档；符号拿不准的照录原文并标注待核对，不猜。
 
 ## 默认档（源提取）的输出
@@ -30,7 +30,7 @@
 ```
 <文件夹名>/
 ├── <论文全名>.pdf            # 源文件，论文全名、空格用 _，下载阶段已有
-├── tex-source/               # 二选一：有 TeX 源码时，解压 <论文全名>-src.tar.gz 到此
+├── tex-source/               # 二选一：有 TeX 源码时，解压 <论文全名>-src.tar.gz 到此（解压后删 tar 包）
 │   └── ...                   #   不做转换，原样交付
 ├── markdown-source/          # 二选一：PDF-only 时，extract_pdf.py split 的输出
 │   ├── 00-front-matter.md

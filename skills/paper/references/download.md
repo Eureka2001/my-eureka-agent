@@ -7,7 +7,7 @@
 目标是把论文拿到手，如实记录来源即可。实操按"命中率高、curl 友好"排序尝试：
 
 1. **开放存档首选**：CVF（CVPR/ICCV）、ECVA（ECCV）、NeurIPS proceedings、PMLR（ICML）对 curl 友好，通常一步到位。
-2. **arXiv 几乎同等正式**：直接用，文件名与索引里不做特殊标注，来源如实标注 arXiv；分格式偏好：PDF 优先官方渠道（开放存档），HTML 与 TeX 源码优先 arXiv。
+2. **arXiv 几乎同等正式**：直接用，文件名与索引里不做特殊标注，来源如实标注 arXiv。**arXiv 系论文首先下载 TeX 源码**（`arxiv.org/e-print/<id>`）作为来源——它既是最好的文本源，也顺带确认了论文的可提取性；PDF（`arxiv.org/pdf/<id>`）与 HTML（`arxiv.org/html/<id>`，旧论文用 ar5iv）作为补充按需再取。
 3. **止损默认**：付费墙（IEEE Xplore、ACM DL）与全面反爬（OpenReview）不硬刚，停在记录来源页 URL 并注明原因；用户明确说"尽一切努力 / 想办法搞到 PDF"才升级尝试其他途径。
 4. 作者方公开挂出的 PDF（实验室官网、作者主页，如 vipl.ict.ac.cn）与会议官方版同等可用，下载并记录来源 URL。
 5. 开放存档尚未收录（如 ICML 当年卷未上 PMLR）：记录 OpenReview / 会议官网 URL，注明"官方卷未上线"。
@@ -42,11 +42,11 @@
 | ACM（MM 等） | WebSearch 标题 + dl.acm.org | 默认只记 DOI 页（如 `https://dl.acm.org/doi/10.1145/3581783.3612351`）。部分作者方（实验室官网）会挂公开 PDF，可搜 `标题 + pdf` |
 | OpenReview | 记录论坛页 URL | 对 curl 一律 403（含 `/pdf?id=` 与 hash 直链，加浏览器头也没用），别恋战；浏览器中人工可开 |
 
-### 4. HTML 与 TeX 源码（按需）
+### 4. TeX 源码与 HTML（arXiv 系默认带 TeX）
 
-PDF 是默认交付物；HTML 与 TeX 源码在两种情况下获取：用户点名要，或**本篇来自 arXiv 系且之后要提取/整理**——此时一律在下载阶段顺手拿到（TeX 源码本身就是良好的纯文本源，解压即交付，详见 to-source 子手册），不需要等提取时发现公式复杂再回头补。非 arXiv 系论文不为此额外找源码，提取时走 PDF-only 路径。来源基本只有 arXiv 系（见速查表 arXiv 行），HTML 优先原生 `arxiv.org/html`，旧论文用 ar5iv 兜底。
+**arXiv 系论文一律在下载阶段先拿 TeX 源码**（`arxiv.org/e-print/<id>`，tar.gz）：TeX 本身就是良好的纯文本源，解压即交付（详见 to-source 子手册），不用等提取时再补。PDF 是面向"拿到论文"的默认交付物，按需再下；HTML（原生 `arxiv.org/html`，旧论文 ar5iv 兜底）用户点名要时再取。非 arXiv 系论文不为此额外找源码，提取时走 PDF-only 路径。
 
-落盘到论文文件夹：`<论文全名>.html`；`<论文全名>-src.tar.gz`。tarball 不默认解压，提取阶段解压到 `tex-source/`。拿到的格式同样记入索引"下载内容"列（多值并列）。
+落盘到论文文件夹：`<论文全名>-src.tar.gz`；`<论文全名>.html`（按需）。tarball 不默认解压，提取阶段解压到 `tex-source/`，**解压验证成功后删除 tar 包**（`tex-source/` 自此即为源文件）。拿到的格式同样记入索引"下载内容"列（多值并列）。
 
 ### 5. 下载与验证（每个文件必做）
 
