@@ -24,6 +24,9 @@
 | `DASHSCOPE_API_KEY`（或 `QWEN_API_KEY`） | 用 qwen 时 | 阿里 DashScope key（与 ocr 的阿里云 key 同账号体系） |
 | `QWEN_VISION_MODEL` | 否 | 默认 `qwen-vl-max` |
 | `DASHSCOPE_BASE_URL` | 否 | 默认 `https://dashscope.aliyuncs.com/compatible-mode/v1` |
+| **延迟控制** | | |
+| `VISION_TIMEOUT` | 否 | 单次模型调用超时秒数，默认 `240` |
+| `VISION_ENABLE_THINKING` | 否 | qwen 默认关思考模式（大图省几十秒）；置 `1`/`true` 开启 |
 
 调用时可传 `backend="glm"|"qwen"` 临时覆盖。
 

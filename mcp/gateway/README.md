@@ -84,6 +84,10 @@ uv run scripts/dump_manifest.py --only fetch,ocr
   停止信号；不要从调用任务里退出这些资源。
 - **死亡记账由 retire 调用方裁决**（`count_death`）：崩溃/异常死亡计入
   冷却，空闲回收/调用超时/网关关停不计——避免把优雅回收误判为崩溃。
+- **读后端 stderr 必须容错解码**（`errors="replace"`）：网关跑在计划任务
+  环境下没有 `PYTHONUTF8`，后端子进程 stderr 默认是 GBK；严格 UTF-8 解码
+  一旦遇到中文诊断输出就崩掉整个 supervisor 会话，进行中的调用会挂死到
+  call timeout。后端侧也应在启动时把 stderr reconfigure 成 UTF-8。
 - 网关自身零凭据；后端凭据链路不变（dotenv 后端从 `__file__` 向上找
   `.env`，habitica 由 `backends.env_for` 注入）。
 

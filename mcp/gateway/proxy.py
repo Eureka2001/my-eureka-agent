@@ -336,6 +336,9 @@ class BackendSession:
                     await self._stop.wait()
         except Exception as exc:
             self._supervisor_error = exc
+            if ready_ok:
+                # 运行期死亡：异常若不上日志，调用方只会看到挂起 + early death
+                logger.exception("backend %s supervisor 异常退出", self.key)
         finally:
             self._session = None
             if not ready_ok:
@@ -402,6 +405,11 @@ class BackendSession:
                         try:
                             message = types.JSONRPCMessage.model_validate_json(line)
                         except Exception as exc:
+                            logger.warning(
+                                "backend %s stdout 非 JSON-RPC 行（注入异常给会话）: %r",
+                                self.key,
+                                line[:200],
+                            )
                             await writer.send(exc)
                             continue
                         await writer.send(SessionMessage(message))
@@ -428,7 +436,9 @@ class BackendSession:
         assert process.stderr is not None
         backend_log = logging.getLogger(f"eureka.gateway.backend.{self.key}")
         try:
-            async for chunk in TextReceiveStream(process.stderr):
+            # errors="replace"：后端在 GBK 环境下写的中文诊断是合法输出，
+            # 严格解码会让整个 supervisor 会话崩掉、挂死进行中的调用。
+            async for chunk in TextReceiveStream(process.stderr, errors="replace"):
                 for line in chunk.splitlines():
                     if line.strip():
                         backend_log.info("%s", line)

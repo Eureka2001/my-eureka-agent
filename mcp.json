@@ -2,7 +2,8 @@
   "mcpServers": {
     "eureka": {
       "type": "http",
-      "url": "http://127.0.0.1:1820/mcp"
+      "url": "http://127.0.0.1:1820/mcp",
+      "timeoutMs": 180000
     }
   }
 }

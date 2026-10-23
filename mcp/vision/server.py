@@ -10,6 +10,11 @@
 
 transport 双模：默认 stdio；MCP_TRANSPORT=http 或 --http 走 streamable-http。
 诊断信息只写 stderr。
+
+延迟控制：
+  VISION_TIMEOUT          单次模型调用超时秒数（默认 240）
+  VISION_ENABLE_THINKING  qwen 后端默认关思考模式（大图上可省几十秒）；
+                          置 1/true 开启。GLM 后端不干预。
 """
 
 from __future__ import annotations
@@ -18,9 +23,17 @@ import base64
 import mimetypes
 import os
 import sys
+import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from mcp.server.fastmcp import FastMCP
+
+if TYPE_CHECKING:
+    from openai.types.chat import (
+        ChatCompletionContentPartParam,
+        ChatCompletionMessageParam,
+    )
 
 mcp = FastMCP("eureka_vision")
 
@@ -42,7 +55,16 @@ def _bootstrap_env() -> None:
 
 _bootstrap_env()
 
+# stderr 是诊断通道；父进程环境不带 PYTHONUTF8 时（如计划任务拉起的网关），
+# Windows 默认按 GBK 编码，中文日志到网关侧会变成非 UTF-8 字节。
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 _BACKENDS = ("glm", "qwen")
+
+
+def _env_flag(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
 
 
 def _backend_config(name: str | None) -> tuple[str, str, str, str]:
@@ -68,7 +90,7 @@ def _backend_config(name: str | None) -> tuple[str, str, str, str]:
     return name, key, base, model
 
 
-def _image_block(image: str) -> dict:
+def _image_block(image: str) -> ChatCompletionContentPartParam:
     """把图片来源归一化为 OpenAI vision 的 image_url 内容块。"""
     if image.startswith(("http://", "https://", "data:")):
         url = image
@@ -103,15 +125,27 @@ def understand_image(
     from openai import OpenAI
 
     name, key, base, model = _backend_config(backend or None)
-    client = OpenAI(api_key=key, base_url=base)
-    messages = [
+    timeout = float(os.environ.get("VISION_TIMEOUT", "240"))
+    client = OpenAI(api_key=key, base_url=base, timeout=timeout, max_retries=1)
+    messages: list[ChatCompletionMessageParam] = [
         {
             "role": "user",
             "content": [_image_block(image), {"type": "text", "text": prompt}],
         }
     ]
+    extra_body: dict[str, object] | None = None
+    if name == "qwen" and not _env_flag("VISION_ENABLE_THINKING"):
+        # qwen3.5 系列思考模式默认开启，大图场景可多花几十秒；描述类任务默认关。
+        extra_body = {"enable_thinking": False}
     try:
-        resp = client.chat.completions.create(model=model, messages=messages)
+        t0 = time.monotonic()
+        resp = client.chat.completions.create(
+            model=model, messages=messages, extra_body=extra_body
+        )
+        print(
+            f"[vision] {name}/{model} 调用耗时 {time.monotonic() - t0:.1f}s",
+            file=sys.stderr,
+        )
     except Exception as e:
         raise RuntimeError(f"[{name}/{model}] 视觉模型调用失败: {e}") from e
     return (resp.choices[0].message.content or "").strip() or "(模型返回为空)"
